@@ -631,8 +631,8 @@ app.post('/api/auth/login', async (req, res, next) => {
     }
     const { rows } = await pool.query(
       `SELECT id, user_name AS "userName", email, role, password
-       FROM users WHERE user_name = $1`,
-      [userName],
+       FROM users WHERE LOWER(user_name) = LOWER($1)`,
+      [userName.trim()],
     )
     const user = rows[0]
     if (!user || user.password !== password) {

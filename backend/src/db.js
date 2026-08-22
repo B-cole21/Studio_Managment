@@ -3,14 +3,26 @@ import pg from 'pg'
 
 const { Pool } = pg
 
-export const pool = new Pool({
-  host: process.env.PGHOST ?? 'localhost',
-  port: Number(process.env.PGPORT ?? 5432),
-  database: process.env.PGDATABASE ?? 'ag_studio',
-  user: process.env.PGUSER ?? 'postgres',
-  password: process.env.PGPASSWORD,
-  max: 10,
-})
+const connectionString = process.env.DATABASE_URL
+const isRemote = Boolean(connectionString || (process.env.PGHOST && process.env.PGHOST !== 'localhost'))
+
+export const pool = new Pool(
+  connectionString
+    ? {
+        connectionString,
+        ssl: { rejectUnauthorized: false },
+        max: 10,
+      }
+    : {
+        host: process.env.PGHOST ?? 'localhost',
+        port: Number(process.env.PGPORT ?? 5432),
+        database: process.env.PGDATABASE ?? 'ag_studio',
+        user: process.env.PGUSER ?? 'postgres',
+        password: process.env.PGPASSWORD,
+        ssl: isRemote ? { rejectUnauthorized: false } : false,
+        max: 10,
+      },
+)
 
 // Auto-migration: ensure remainder_payment_type allows NULL for unpaid packages
 pool.query('ALTER TABLE package ALTER COLUMN remainder_payment_type DROP NOT NULL').catch((err) => {
