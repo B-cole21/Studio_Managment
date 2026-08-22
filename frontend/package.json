@@ -10,10 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@oxlint/binding-win32-x64-msvc": "^1.77.0",
-    "@rolldown/binding-win32-x64-msvc": "^1.2.2",
     "@tailwindcss/vite": "^4.3.3",
-    "lightningcss-win32-x64-msvc": "^1.33.0",
     "lucide-react": "^1.28.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
