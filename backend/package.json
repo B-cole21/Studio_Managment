@@ -1,0 +1,20 @@
+{
+  "name": "studio-managment-backend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "setup": "node setup.mjs"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "express-session": "^1.19.0",
+    "nodemailer": "^9.0.5",
+    "pg": "^8.16.3"
+  }
+}

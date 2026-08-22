@@ -1,0 +1,87 @@
+Phase A — Production check over HTTP
+1. Stop the dev server first — your npm run dev (backend) is still running on port 4000, and npm start can't share it. Close it (Ctrl+C in that terminal) or note it'll conflict.
+2. Open a terminal in D:\Project\Studio_Managment\frontend:
+Buildnpm run build·Big PickleOpenCode Zen
+(Builds the app into frontend\dist — the production server serves this folder.)
+esc interrupt
+3. Check D:\Project\Studio_Managment\backend\.env has your DB settings (it should already: PGDATABASE=ag_studio, PGPASSWORD=...). No need to re-run setup — your DB exists.
+4. Open a terminal in D:\Project\Studio_Managment\backend and run:
+npm start
+You should see AG Studio serving HTTP on http://0.0.0.0:4000. This is the production server (no --watch, no auto-reload).
+5. Open http://localhost:4000 in your browser → you should get the login page, and logging in works (you'll be signed out of the old session — that's normal, sessions reset).
+6. Optional sanity check: http://localhost:4000/api/health → {"status":"ok","database":"connected"}.
+That confirms the whole app runs without npm run dev.
+Phase B — HTTPS check (https://agstudio.com) — optional, do this after Phase A works
+1. Right-click PowerShell → Run as administrator, then:
+cd D:\Project\Studio_Managment\backend
+powershell -ExecutionPolicy Bypass -File .\create-local-cert.ps1
+Creates D:\Project\Studio_Managment\deploy\ca.cer + agstudio.pfx.
+2. Edit backend\.env — add/change:
+PORT=8443
+HTTPS_PFX=..\deploy\agstudio.pfx
+HTTPS_PFX_PASS=studio123
+SESSION_SECURE=true
+(Use 8443 for the local test — 443 needs admin every time you restart. On the studio server the service runs as SYSTEM, so 443 is fine there.)
+3. Stop the server (Ctrl+C) and run npm start again → you should see AG Studio serving HTTPS on https://0.0.0.0:8443.
+4. Install deploy\ca.cer: right-click → Install Certificate → Local Machine → Trusted Root Certification Authorities.
+5. Edit C:\Windows\System32\drivers\etc\hosts (notepad as admin), add:
+127.0.0.1    agstudio.com
+6. Open https://agstudio.com:8443 — no certificate warning, login works.
+Two reminders:
+When you're done testing, remove that hosts line or the service cert will interfere with the real deployment later.
+npm start doesn't auto-reload — if you change code while testing, rebuild (npm run build) and restart the server.
+Tell me what you see at step 4 (Phase A) and I'll help if anything's off.
+▣  Build · Big Pickle · 19.5s
+should l type this in powershell cd D:\Project\Studio_Managment\backend
+powershell -ExecutionPolicy Bypass -File .\create-local-cert.ps1
+Creates D:\Project\Studio_Managment\deploy\ca.cer + agstudio.pfx. 
++ Thought: 3.5s
+Yes — but make sure you opened the window as Administrator first (title should say "Administrator: Windows PowerShell"). Then type exactly these two lines:
+cd D:\Project\Studio_Managment\backend
+powershell -ExecutionPolicy Bypass -File .\create-local-cert.ps1
+The Creates ... ca.cer + agstudio.pfx text is not a command — it's just what the script will do. You don't type it.
+If the window doesn't say "Administrator", close it and re-open as admin first — the script needs admin rights to create the certificate.
+▣  Build · Big Pickle · 11.6s
+in step 2 should l added this Edit backend\.env — add/change:
+PORT=8443
+HTTPS_PFX=..\deploy\agstudio.pfx
+HTTPS_PFX_PASS=studio123
+SESSION_SECURE=true  
++ Thought: 2.2s
+Yes. Open D:\Project\Studio_Managment\backend\.env in Notepad (right-click → Open with → Notepad). Then:
+1. Find the line PORT=4000 and change it to PORT=8443.
+2. Add these lines below it:
+HTTPS_PFX=..\deploy\agstudio.pfx
+HTTPS_PFX_PASS=studio123
+SESSION_SECURE=true
+(If you already see #HTTPS_PFX=... lines there with a # in front, just delete the # instead of adding new ones.)
+3. Save the file (Ctrl+S) and close Notepad.
+Then continue to step 3: stop the server (Ctrl+C) and run npm start again in the backend terminal.
+▣  Build · Big Pickle · 8.1s
+it says this in step 3 G Studio serving HTTP on http://0.0.0.0:4000
+PS D:\Project\Studio_Managment\backend> npm start
+
+> studio-managment-backend@1.0.0 start
+> node src/server.js
+
+AG Studio serving HTTPS on https://0.0.0.0:4000 
++ Thought: 6.8s
+That's fine — HTTPS is working. The port is still 4000 because your .env still has PORT=4000 (the change to 8443 didn't take effect, or you left it). You have two choices:
+Option A (simplest, no more edits): keep port 4000 and just browse https://agstudio.com:4000.
+Option B: edit .env, change PORT=4000 → PORT=8443, stop the server (Ctrl+C), run npm start again, then browse https://agstudio.com:8443.
+Either way the port must match the URL you type. Just make sure you've done steps 4 and 5 first:
+1. Install the CA — right-click D:\Project\Studio_Managment\deploy\ca.cer → Install Certificate → Local Machine → Trusted Root Certification Authorities.
+2. Hosts file — add 127.0.0.1    agstudio.com to C:\Windows\System32\drivers\etc\hosts (notepad as admin).
+Then open the matching URL in your browser (e.g. https://agstudio.com:4000) — no warning, login works.
+▣  Build · Big Pickle · 14.5s
+> studio-managment-backend@1.0.0 start
+> node src/server.js
+
+AG Studio serving HTTPS on https://0.0.0.0:8443 
++ Thought: 761ms
+That's correct — HTTPS is now live on port 8443.
+Make sure you've done these, then open your browser:
+1. CA installed — right-click D:\Project\Studio_Managment\deploy\ca.cer → Install Certificate → Local Machine → Trusted Root Certification Authorities (so there's no warning).
+2. Hosts entry — add 127.0.0.1    agstudio.com to C:\Windows\System32\drivers\etc\hosts (notepad as admin).
+3. Browse to https://agstudio.com:8443 → login page appears, log in with admin/123456 (or boss/password).
+Tell me what happens at step 3.
