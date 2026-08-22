@@ -41,8 +41,10 @@ export interface SettingsRecord {
   cameraCount?: number
 }
 
+const API_BASE = import.meta.env.VITE_API_URL || ''
+
 export async function api<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${API_BASE}/api${path}`, {
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
     ...options,
