@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
+import { MobileNav } from './MobileNav'
 import { ToastRegion } from '../ui/Toast'
 import { useStore } from '../../lib/store'
 
@@ -17,16 +18,19 @@ export function AppShell() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-canvas text-text-primary">
-      <Sidebar />
+      <div className="hidden md:flex h-full shrink-0">
+        <Sidebar />
+      </div>
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
-        <main className="flex-1 overflow-y-auto scrollbar-thin">
-          <div className={`mx-auto w-full transition-all duration-300 px-4 py-6 sm:px-6 lg:px-8 ${sidebarCollapsed ? 'max-w-none' : 'max-w-[1440px]'}`}>
+        <main className="flex-1 overflow-y-auto scrollbar-thin pb-20 md:pb-6">
+          <div className={`mx-auto w-full transition-all duration-300 px-3 py-4 sm:px-6 sm:py-6 lg:px-8 ${sidebarCollapsed ? 'max-w-none' : 'max-w-[1440px]'}`}>
             <Outlet />
           </div>
         </main>
       </div>
 
+      <MobileNav />
       <ToastRegion />
     </div>
   )

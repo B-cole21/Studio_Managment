@@ -1,4 +1,4 @@
-import { PanelLeftClose, PanelLeft, Moon, Sun, CalendarDays } from 'lucide-react'
+import { Aperture, PanelLeftClose, PanelLeft, Moon, Sun, CalendarDays } from 'lucide-react'
 import { useStore } from '../../lib/store'
 import { IconButton } from '../ui/Button'
 import { Tooltip } from '../ui/Tooltip'
@@ -7,23 +7,40 @@ import { formatDate, todayISO } from '../../lib/format'
 export function Topbar() {
   const collapsed = useStore((s) => s.sidebarCollapsed)
   const toggleSidebar = useStore((s) => s.toggleSidebar)
+  const studioName = useStore((s) => s.settings.studioName)
   const theme = useStore((s) => s.theme)
   const setTheme = useStore((s) => s.setTheme)
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border-subtle bg-surface-1 px-3">
-      <IconButton
-        label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        icon={collapsed ? <PanelLeft size={17} /> : <PanelLeftClose size={17} />}
-        onClick={toggleSidebar}
-      />
+    <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border-subtle bg-surface-1 px-3 sm:px-4">
+      {/* Desktop Sidebar Toggle */}
+      <div className="hidden md:flex items-center gap-2">
+        <IconButton
+          label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          icon={collapsed ? <PanelLeft size={17} /> : <PanelLeftClose size={17} />}
+          onClick={toggleSidebar}
+        />
+        <span className="ml-1 flex items-center gap-1.5 text-[13px] text-text-secondary">
+          <CalendarDays size={14} className="text-text-muted" />
+          {formatDate(todayISO())}
+        </span>
+      </div>
 
-      <span className="ml-1 hidden items-center gap-1.5 text-[13px] text-text-secondary md:flex">
-        <CalendarDays size={14} className="text-text-muted" />
-        {formatDate(todayISO())}
-      </span>
+      {/* Mobile Branding Logo & Studio Name */}
+      <div className="flex md:hidden items-center gap-2.5">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-soft text-accent">
+          <Aperture size={18} />
+        </span>
+        <span className="text-sm font-semibold text-text-primary truncate max-w-[160px]">
+          {studioName}
+        </span>
+      </div>
 
-      <div className="ml-auto flex items-center gap-1.5">
+      {/* Theme Toggle */}
+      <div className="flex items-center gap-1.5">
+        <span className="text-[11px] text-text-muted md:hidden flex items-center gap-1">
+          {formatDate(todayISO())}
+        </span>
         <Tooltip label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
           <IconButton
             label="Toggle theme"
