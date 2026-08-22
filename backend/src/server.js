@@ -9,8 +9,24 @@ import { fileURLToPath } from 'node:url'
 import { pool, nextId } from './db.js'
 
 const app = express()
-app.use(cors({ origin: true, credentials: true }))
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  }
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204)
+  }
+  next()
+})
+
 app.use(express.json())
+
+const isProductionSecure = process.env.SESSION_SECURE === 'true' || process.env.NODE_ENV === 'production'
 
 app.use(
   session({
@@ -20,8 +36,8 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.SESSION_SECURE === 'true',
+      sameSite: isProductionSecure ? 'none' : 'lax',
+      secure: isProductionSecure,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     },
   }),
