@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url'
 import { pool, nextId } from './db.js'
 
 const app = express()
+app.set('trust proxy', 1)
 
 app.use((req, res, next) => {
   const origin = req.headers.origin
@@ -221,7 +222,7 @@ app.get('/api/package', requireRole(['cashier', 'owner', 'cameraman']), async (_
   }
 })
 
-app.post('/api/package', requireRole(['cashier', 'cameraman']), async (req, res, next) => {
+app.post('/api/package', requireRole(['cashier', 'cameraman', 'owner']), async (req, res, next) => {
   try {
     const me = req.session.user
     const { name, phone, quantity, frame, firstPayment, secondPayment, remainder, date, fullPayment, paymentType, pendingSelection, remainderPaymentType } = req.body
