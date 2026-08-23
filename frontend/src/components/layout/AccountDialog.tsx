@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { KeyRound, Mail, Save, UserCog } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { KeyRound, LogOut, Mail, Save, UserCog } from 'lucide-react'
 import { useStore } from '../../lib/store'
 import { Dialog } from '../ui/Dialog'
 import { Button } from '../ui/Button'
@@ -13,7 +14,9 @@ export interface AccountDialogProps {
 export function AccountDialog({ open, onClose }: AccountDialogProps) {
   const authUser = useStore((s) => s.authUser)
   const updateAccount = useStore((s) => s.updateAccount)
+  const logout = useStore((s) => s.logout)
   const pushToast = useStore((s) => s.pushToast)
+  const navigate = useNavigate()
 
   const [userName, setUserName] = useState(authUser?.userName ?? '')
   const [email, setEmail] = useState(authUser?.email ?? '')
@@ -22,6 +25,12 @@ export function AccountDialog({ open, onClose }: AccountDialogProps) {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+
+  const handleLogout = async () => {
+    await logout()
+    onClose()
+    navigate('/login')
+  }
 
   useEffect(() => {
     if (open) {
@@ -78,12 +87,17 @@ export function AccountDialog({ open, onClose }: AccountDialogProps) {
       description="Update your username, email address, or password"
       icon={<UserCog size={18} />}
       footer={
-        <>
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button icon={<Save size={15} />} disabled={!valid || saving} loading={saving} onClick={submit}>
-            Save changes
+        <div className="flex w-full items-center justify-between gap-2">
+          <Button variant="destructive" icon={<LogOut size={15} />} onClick={handleLogout}>
+            Sign out
           </Button>
-        </>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={onClose}>Cancel</Button>
+            <Button icon={<Save size={15} />} disabled={!valid || saving} loading={saving} onClick={submit}>
+              Save changes
+            </Button>
+          </div>
+        </div>
       }
     >
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>

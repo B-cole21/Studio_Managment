@@ -1,4 +1,5 @@
-import { Aperture, PanelLeftClose, PanelLeft, Moon, Sun, CalendarDays } from 'lucide-react'
+import { Aperture, PanelLeftClose, PanelLeft, Moon, Sun, CalendarDays, LogOut } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useStore } from '../../lib/store'
 import { IconButton } from '../ui/Button'
 import { Tooltip } from '../ui/Tooltip'
@@ -10,6 +11,13 @@ export function Topbar() {
   const studioName = useStore((s) => s.settings.studioName)
   const theme = useStore((s) => s.theme)
   const setTheme = useStore((s) => s.setTheme)
+  const logout = useStore((s) => s.logout)
+  const navigate = useNavigate()
+
+  async function handleLogout() {
+    await logout()
+    navigate('/login')
+  }
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border-subtle bg-surface-1 px-3 sm:px-4">
@@ -36,7 +44,7 @@ export function Topbar() {
         </span>
       </div>
 
-      {/* Theme Toggle */}
+      {/* Theme & Logout Actions */}
       <div className="flex items-center gap-1.5">
         <span className="text-[11px] text-text-muted md:hidden flex items-center gap-1">
           {formatDate(todayISO())}
@@ -48,6 +56,15 @@ export function Topbar() {
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           />
         </Tooltip>
+        <div className="md:hidden">
+          <Tooltip label="Sign out">
+            <IconButton
+              label="Sign out"
+              icon={<LogOut size={17} />}
+              onClick={handleLogout}
+            />
+          </Tooltip>
+        </div>
       </div>
     </header>
   )

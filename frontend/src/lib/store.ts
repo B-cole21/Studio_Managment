@@ -166,7 +166,18 @@ export const useStore = create<StoreState>()((set, get) => ({
   validateSession: async () => {
     try {
       const user = await getMe()
-      set({ authUser: user })
+      if (user) {
+        set({
+          authUser: user,
+          currentUser: {
+            name: user.userName,
+            role: user.role,
+            initials: initialsOf(user.userName),
+          },
+        })
+      } else {
+        set({ authUser: null })
+      }
     } catch {
       set({ authUser: null })
     }

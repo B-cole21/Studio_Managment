@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import session from 'express-session'
+import connectPgSimple from 'connect-pg-simple'
 import nodemailer from 'nodemailer'
 import { existsSync, readFileSync } from 'node:fs'
 import https from 'node:https'
@@ -27,10 +28,16 @@ app.use((req, res, next) => {
 
 app.use(express.json())
 
+const PgSession = connectPgSimple(session)
 const isProductionSecure = process.env.SESSION_SECURE === 'true' || process.env.NODE_ENV === 'production'
 
 app.use(
   session({
+    store: new PgSession({
+      pool,
+      tableName: 'session',
+      createTableIfMissing: true,
+    }),
     name: 'studio.sid',
     secret: process.env.SESSION_SECRET ?? 'studio-dev-secret',
     resave: false,
@@ -38,7 +45,7 @@ app.use(
     cookie: {
       httpOnly: true,
       sameSite: isProductionSecure ? 'none' : 'lax',
-      secure: isProductionSecure,
+      secure: isProductionSecure ? true : 'auto',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     },
   }),
