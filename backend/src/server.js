@@ -3,6 +3,9 @@ import cors from 'cors'
 import session from 'express-session'
 import connectPgSimple from 'connect-pg-simple'
 import nodemailer from 'nodemailer'
+import bcrypt from 'bcrypt'
+import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
 import { existsSync, readFileSync } from 'node:fs'
 import https from 'node:https'
 import path from 'node:path'
@@ -11,6 +14,27 @@ import { pool, nextId } from './db.js'
 
 const app = express()
 app.set('trust proxy', 1)
+
+// HTTP Security Headers
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }),
+)
+
+// Rate Limiting for Authentication Endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many authentication attempts. Please try again in 15 minutes.' },
+})
+
+app.use('/api/auth/login', authLimiter)
+app.use('/api/auth/request-otp', authLimiter)
+app.use('/api/auth/reset-password-otp', authLimiter)
 
 app.use((req, res, next) => {
   const origin = req.headers.origin
@@ -643,7 +667,8 @@ app.post('/api/auth/login', async (req, res, next) => {
       [userName.trim()],
     )
     const user = rows[0]
-    if (!user || user.password !== password) {
+    const valid = user && (await bcrypt.compare(password, user.password).catch(() => false))
+    if (!user || !valid) {
       return res.status(401).json({ error: 'Invalid username or password' })
     }
     const { password: _hidden, ...safe } = user
@@ -817,9 +842,10 @@ app.post('/api/auth/reset-password-otp', async (req, res, next) => {
       return res.status(400).json({ error: 'Verification code has expired. Please request a new code.' })
     }
 
+    const hashedPassword = await bcrypt.hash(newPassword.trim(), 10)
     await pool.query(
       `UPDATE users SET password = $2, reset_otp = NULL, reset_otp_expires_at = NULL WHERE id = $1`,
-      [user.id, newPassword.trim()],
+      [user.id, hashedPassword],
     )
 
     res.json({ message: 'Password updated successfully' })
@@ -850,17 +876,23 @@ app.put('/api/auth/me', async (req, res, next) => {
     )
     const user = rows[0]
     if (!user) return res.status(401).json({ error: 'Session expired — please sign in again' })
-    if (user.password !== currentPassword) {
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password).catch(() => false)
+    if (!isPasswordValid) {
       return res.status(400).json({ error: 'Current password is incorrect' })
     }
     const updatedUserName = typeof userName === 'string' && userName.trim() ? userName.trim() : user.userName
     const updatedEmail = typeof email === 'string' ? email.trim() || null : user.email
+    const updatedPasswordHash =
+      typeof newPassword === 'string' && newPassword.trim()
+        ? await bcrypt.hash(newPassword.trim(), 10)
+        : user.password
+
     const { rows: updatedRows } = await pool.query(
       `UPDATE users
-       SET user_name = $2, email = $3, password = COALESCE($4, password)
+       SET user_name = $2, email = $3, password = $4
        WHERE id = $1
        RETURNING id, user_name AS "userName", email, role`,
-      [user.id, updatedUserName, updatedEmail, newPassword ?? null],
+      [user.id, updatedUserName, updatedEmail, updatedPasswordHash],
     )
     const safe = updatedRows[0]
     req.session.user = safe

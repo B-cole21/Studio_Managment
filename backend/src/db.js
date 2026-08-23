@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import pg from 'pg'
+import bcrypt from 'bcrypt'
 
 const { Pool } = pg
 
@@ -36,6 +37,29 @@ pool.query('ALTER TABLE settings ADD COLUMN IF NOT EXISTS camera_count INTEGER D
 // Auto-migration: users table OTP columns for password reset
 pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp TEXT').catch(() => {})
 pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp_expires_at TIMESTAMPTZ').catch(() => {})
+
+// Auto-migration & Performance Indexes
+pool.query('CREATE INDEX IF NOT EXISTS idx_booking_date ON booking (date)').catch(() => {})
+pool.query('CREATE INDEX IF NOT EXISTS idx_package_date ON package (date DESC)').catch(() => {})
+pool.query('CREATE INDEX IF NOT EXISTS idx_package_created_at ON package (created_at DESC)').catch(() => {})
+pool.query('CREATE INDEX IF NOT EXISTS idx_users_user_name ON users (user_name)').catch(() => {})
+
+// Auto-migration: hash existing plaintext passwords to bcrypt
+async function migratePasswordsToBcrypt() {
+  try {
+    const { rows } = await pool.query('SELECT id, password FROM users')
+    for (const u of rows) {
+      if (u.password && !u.password.startsWith('$2a$') && !u.password.startsWith('$2b$') && !u.password.startsWith('$2y$')) {
+        const hash = await bcrypt.hash(u.password.trim(), 10)
+        await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hash, u.id])
+        console.log(`Migrated user ID ${u.id} password to bcrypt hash.`)
+      }
+    }
+  } catch (err) {
+    console.error('Password bcrypt migration note:', err.message)
+  }
+}
+migratePasswordsToBcrypt()
 
 export async function nextId(table, prefix) {
   const pattern = `${prefix}-%`
