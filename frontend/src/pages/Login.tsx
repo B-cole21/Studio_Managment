@@ -88,8 +88,8 @@ export function Login() {
       </div>
 
       {/* Right sign-in form */}
-      <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-16">
-        <div className="mx-auto w-full max-w-sm">
+      <div className="flex w-full flex-col justify-between px-6 py-12 lg:w-1/2 lg:px-16">
+        <div className="my-auto mx-auto w-full max-w-sm">
           <div className="mb-8 flex flex-col items-center text-center lg:items-start lg:text-left">
             <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-soft text-accent lg:hidden">
               <Aperture size={26} />
@@ -152,6 +152,19 @@ export function Login() {
               Sign in <ArrowRight size={16} />
             </Button>
           </form>
+        </div>
+
+        {/* Developer Credit Footer */}
+        <div className="mt-8 text-center text-xs text-text-muted">
+          Developed with <span className="text-red-500">❤️</span> by{' '}
+          <a
+            href="https://birukyihun.netlify.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-amber-400 hover:text-amber-300 transition-colors underline decoration-amber-400/50 decoration-2 underline-offset-4"
+          >
+            Biruk
+          </a>
         </div>
       </div>
     </div>
