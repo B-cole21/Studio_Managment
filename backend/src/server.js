@@ -503,7 +503,7 @@ app.post('/api/package/:id/confirm-first', requireRole(['owner']), async (req, r
     const pkg = rows[0]
     if (!pkg) return res.status(404).json({ error: 'Package not found' })
     if (pkg.firstConfirmed) return res.status(400).json({ error: 'First payment already confirmed' })
-    if (!pkg.firstCashierConfirmed) return res.status(400).json({ error: 'Cashier has not confirmed the first payment yet' })
+    if (pkg.paymentType === 'Cash' && !pkg.firstCashierConfirmed) return res.status(400).json({ error: 'Cashier has not confirmed the first payment yet' })
     await pool.query(
       `UPDATE package
        SET first_confirmed = TRUE, first_confirmed_by = $2, first_confirmed_at = NOW()
@@ -548,7 +548,8 @@ app.post('/api/package/:id/confirm-remainder', requireRole(['owner']), async (re
     if (pkg.fullPayment) return res.status(400).json({ error: 'This is a full payment package' })
     if (pkg.remainderConfirmed) return res.status(400).json({ error: 'Remainder already confirmed' })
     if (!pkg.remainderReceived) return res.status(400).json({ error: 'The remainder payment has not been recorded yet' })
-    if (!pkg.remainderCashierConfirmed) return res.status(400).json({ error: 'Cashier has not confirmed the remainder payment yet' })
+    const effectiveRemainderType = pkg.remainderPaymentType || pkg.paymentType
+    if (effectiveRemainderType === 'Cash' && !pkg.remainderCashierConfirmed) return res.status(400).json({ error: 'Cashier has not confirmed the remainder payment yet' })
     await pool.query(
       `UPDATE package
        SET remainder_confirmed = TRUE, remainder_confirmed_by = $2, remainder_confirmed_at = NOW()
@@ -592,7 +593,7 @@ app.post('/api/package/:id/confirm-second', requireRole(['owner']), async (req, 
     if (!pkg) return res.status(404).json({ error: 'Package not found' })
     if (pkg.secondPayment <= 0) return res.status(400).json({ error: 'No second payment on this package' })
     if (pkg.secondPaymentConfirmed) return res.status(400).json({ error: 'Second payment already confirmed' })
-    if (!pkg.secondPaymentCashierConfirmed) return res.status(400).json({ error: 'Cashier has not confirmed the second payment yet' })
+    if (pkg.paymentType === 'Cash' && !pkg.secondPaymentCashierConfirmed) return res.status(400).json({ error: 'Cashier has not confirmed the second payment yet' })
     await pool.query(
       `UPDATE package
        SET second_payment_confirmed = TRUE, second_payment_confirmed_by = $2, second_payment_confirmed_at = NOW()

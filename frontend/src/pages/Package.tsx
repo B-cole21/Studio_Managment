@@ -80,24 +80,29 @@ function statusOf(pkg: PackageRecord): { label: string; tone: BadgeTone } {
     return { label: 'Paid', tone: 'paid' }
   }
 
+  const isFirstCash = pkg.paymentType === 'Cash'
+  const isSecondCash = pkg.paymentType === 'Cash'
+  const effRemainderType = pkg.remainderPaymentType || pkg.paymentType || 'Cash'
+  const isRemainderCash = effRemainderType === 'Cash'
+
   if (pkg.fullPayment) {
     if (firstDone && secondDone && remainderDone) return { label: 'Paid', tone: 'paid' }
-    if (pkg.firstCashierConfirmed) return { label: 'Full payment · awaiting owner', tone: 'info' }
+    if (!isFirstCash || pkg.firstCashierConfirmed) return { label: 'Full payment · awaiting owner', tone: 'info' }
     return { label: 'Full payment · awaiting cashier', tone: 'warning' }
   }
 
   if (!pkg.firstConfirmed) {
-    if (pkg.firstCashierConfirmed) return { label: 'Awaiting owner confirmation', tone: 'info' }
+    if (!isFirstCash || pkg.firstCashierConfirmed) return { label: 'Awaiting owner confirmation', tone: 'info' }
     return { label: 'Awaiting cashier confirmation', tone: 'warning' }
   }
 
   if (pkg.secondPayment > 0 && !pkg.secondPaymentConfirmed) {
-    if (pkg.secondPaymentCashierConfirmed) return { label: 'Second payment · awaiting owner', tone: 'info' }
+    if (!isSecondCash || pkg.secondPaymentCashierConfirmed) return { label: 'Second payment · awaiting owner', tone: 'info' }
     return { label: 'Second payment · awaiting cashier', tone: 'warning' }
   }
 
   if ((pkg.remainder ?? 0) > 0 && !pkg.remainderConfirmed) {
-    if (pkg.remainderCashierConfirmed) return { label: 'Remainder · awaiting owner', tone: 'info' }
+    if (pkg.remainderReceived && (!isRemainderCash || pkg.remainderCashierConfirmed)) return { label: 'Remainder · awaiting owner', tone: 'info' }
     if (pkg.remainderReceived) return { label: 'Remainder received · awaiting cashier', tone: 'warning' }
     return { label: 'Remainder pending', tone: 'warning' }
   }
@@ -621,6 +626,10 @@ export function PackagePage() {
                   const status = statusOf(pkg)
                   const total = pkg.firstPayment + pkg.secondPayment + (pkg.remainder ?? 0)
                   const isFullyPaid = (pkg.fullPayment && pkg.firstConfirmed) || (pkg.remainderConfirmed && (pkg.secondPayment <= 0 || pkg.secondPaymentConfirmed))
+                  const isFirstCash = pkg.paymentType === 'Cash'
+                  const isSecondCash = pkg.paymentType === 'Cash'
+                  const effRemainderType = pkg.remainderPaymentType || pkg.paymentType || 'Cash'
+                  const isRemainderCash = effRemainderType === 'Cash'
                   return (
                     <tr key={pkg.id} className="border-b border-border-subtle/60 last:border-b-0">
                       <td className="whitespace-nowrap px-4 py-3">
@@ -637,9 +646,11 @@ export function PackagePage() {
                         {fmt(pkg.firstPayment)} <span className="text-text-muted">({pkg.paymentType})</span>
                         {!isFullyPaid && (
                           <div className="flex items-center gap-1 mt-0.5">
-                            {pkg.firstCashierConfirmed
-                              ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
-                              : <Badge tone="warning" className="text-[9px] px-1 py-0">Cashier pending</Badge>}
+                            {isFirstCash && (
+                              pkg.firstCashierConfirmed
+                                ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
+                                : <Badge tone="warning" className="text-[9px] px-1 py-0">Cashier pending</Badge>
+                            )}
                             {pkg.firstConfirmed
                               ? <Badge tone="paid" className="text-[9px] px-1 py-0">Owner ✓</Badge>
                               : <Badge tone="neutral" className="text-[9px] px-1 py-0">Owner pending</Badge>}
@@ -652,9 +663,11 @@ export function PackagePage() {
                             {fmt(pkg.secondPayment)} <span className="text-text-muted">({pkg.paymentType})</span>
                             {!isFullyPaid && (
                               <div className="flex items-center gap-1 mt-0.5">
-                                {pkg.secondPaymentCashierConfirmed
-                                  ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
-                                  : <Badge tone="warning" className="text-[9px] px-1 py-0">Cashier pending</Badge>}
+                                {isSecondCash && (
+                                  pkg.secondPaymentCashierConfirmed
+                                    ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
+                                    : <Badge tone="warning" className="text-[9px] px-1 py-0">Cashier pending</Badge>
+                                )}
                                 {pkg.secondPaymentConfirmed
                                   ? <Badge tone="paid" className="text-[9px] px-1 py-0">Owner ✓</Badge>
                                   : <Badge tone="neutral" className="text-[9px] px-1 py-0">Owner pending</Badge>}
@@ -669,11 +682,15 @@ export function PackagePage() {
                             {fmt(pkg.remainder)} {pkg.remainderPaymentType ? <span className="text-text-muted">({pkg.remainderPaymentType})</span> : null}
                             {!isFullyPaid && !pkg.fullPayment && (pkg.remainder ?? 0) > 0 && (
                               <div className="flex items-center gap-1 mt-0.5">
-                                {pkg.remainderReceived
-                                  ? pkg.remainderCashierConfirmed
-                                    ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
-                                    : <Badge tone="warning" className="text-[9px] px-1 py-0">Cashier pending</Badge>
-                                  : <Badge tone="neutral" className="text-[9px] px-1 py-0">Not received</Badge>}
+                                {pkg.remainderReceived ? (
+                                  isRemainderCash ? (
+                                    pkg.remainderCashierConfirmed
+                                      ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
+                                      : <Badge tone="warning" className="text-[9px] px-1 py-0">Cashier pending</Badge>
+                                  ) : null
+                                ) : (
+                                  <Badge tone="neutral" className="text-[9px] px-1 py-0">Not received</Badge>
+                                )}
                                 {pkg.remainderConfirmed
                                   ? <Badge tone="paid" className="text-[9px] px-1 py-0">Owner ✓</Badge>
                                   : <Badge tone="neutral" className="text-[9px] px-1 py-0">Owner pending</Badge>}
@@ -697,42 +714,42 @@ export function PackagePage() {
                               onClick={() => openComplete(pkg)}
                             />
                           )}
-                          {isCashier && !pkg.firstCashierConfirmed && !pkg.firstConfirmed && (
+                          {isCashier && isFirstCash && !pkg.firstCashierConfirmed && !pkg.firstConfirmed && (
                             <IconButton
                               label={`Confirm received first payment from cameraman for ${pkg.name}`}
                               icon={<CheckCheck size={15} className="text-info" />}
                               onClick={() => setCashierConfirmFirstTarget(pkg)}
                             />
                           )}
-                          {isOwner && pkg.firstCashierConfirmed && !pkg.firstConfirmed && (
+                          {isOwner && (isFirstCash ? pkg.firstCashierConfirmed : true) && !pkg.firstConfirmed && (
                             <IconButton
                               label={`Confirm first payment of ${pkg.name}`}
                               icon={<CheckCheck size={15} className="text-info" />}
                               onClick={() => setConfirmFirstTarget(pkg)}
                             />
                           )}
-                          {isCashier && !pkg.fullPayment && pkg.remainderReceived && !pkg.remainderCashierConfirmed && !pkg.remainderConfirmed && (
+                          {isCashier && !pkg.fullPayment && pkg.remainderReceived && isRemainderCash && !pkg.remainderCashierConfirmed && !pkg.remainderConfirmed && (
                             <IconButton
                               label={`Confirm received remainder from cameraman for ${pkg.name}`}
                               icon={<CheckCheck size={15} className="text-info" />}
                               onClick={() => setCashierConfirmRemainderTarget(pkg)}
                             />
                           )}
-                          {isOwner && !pkg.fullPayment && pkg.remainderCashierConfirmed && !pkg.remainderConfirmed && (
+                          {isOwner && !pkg.fullPayment && pkg.remainderReceived && (isRemainderCash ? pkg.remainderCashierConfirmed : true) && !pkg.remainderConfirmed && (
                             <IconButton
                               label={`Confirm remainder payment of ${pkg.name}`}
                               icon={<Wallet size={15} className="text-warning" />}
                               onClick={() => setConfirmRemainderTarget(pkg)}
                             />
                           )}
-                          {isCashier && pkg.secondPayment > 0 && !pkg.secondPaymentCashierConfirmed && !pkg.secondPaymentConfirmed && (
+                          {isCashier && pkg.secondPayment > 0 && isSecondCash && !pkg.secondPaymentCashierConfirmed && !pkg.secondPaymentConfirmed && (
                             <IconButton
                               label={`Confirm received second payment from cameraman for ${pkg.name}`}
                               icon={<CheckCheck size={15} className="text-info" />}
                               onClick={() => setCashierConfirmSecondTarget(pkg)}
                             />
                           )}
-                          {isOwner && pkg.secondPayment > 0 && pkg.secondPaymentCashierConfirmed && !pkg.secondPaymentConfirmed && (
+                          {isOwner && pkg.secondPayment > 0 && (isSecondCash ? pkg.secondPaymentCashierConfirmed : true) && !pkg.secondPaymentConfirmed && (
                             <IconButton
                               label={`Confirm second payment of ${pkg.name}`}
                               icon={<Wallet size={15} className="text-warning" />}
