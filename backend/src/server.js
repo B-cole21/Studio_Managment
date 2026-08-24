@@ -688,38 +688,22 @@ function generateOtp() {
 }
 
 function createTransporter() {
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com'
-  const port = Number(process.env.SMTP_PORT || 465)
-  const user = process.env.SMTP_USER
-  const pass = process.env.SMTP_PASS
+  const user = process.env.SMTP_USER?.trim()
+  const pass = process.env.SMTP_PASS?.trim()
 
   if (!user || !pass) {
     return null
   }
 
-  if (host.includes('gmail')) {
-    return nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user, pass },
-      family: 4,
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 20000,
-    })
-  }
-
   return nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     family: 4,
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
-    socketTimeout: 20000,
     auth: { user, pass },
-    lookup: (hostname, options, callback) => {
-      dns.lookup(hostname, { ...options, family: 4 }, callback)
-    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   })
 }
 
