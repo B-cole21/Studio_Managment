@@ -156,7 +156,7 @@ export function Login() {
 
         {/* Developer Credit Footer */}
         <div className="mt-8 text-center text-xs text-text-muted">
-          Developed with <span className="text-red-500">❤️</span> by{' '}
+          Developed by{' '}
           <a
             href="https://birukyihun.netlify.app/"
             target="_blank"
