@@ -70,27 +70,6 @@ export function loginRequest(userName: string, password: string): Promise<AuthUs
   })
 }
 
-export function requestOtpApi(email: string): Promise<{ message: string; otp?: string }> {
-  return api<{ message: string; otp?: string }>('/auth/request-otp', {
-    method: 'POST',
-    body: JSON.stringify({ email }),
-  })
-}
-
-export function verifyOtpApi(email: string, otp: string): Promise<{ message: string }> {
-  return api<{ message: string }>('/auth/verify-otp', {
-    method: 'POST',
-    body: JSON.stringify({ email, otp }),
-  })
-}
-
-export function resetPasswordWithOtpApi(email: string, otp: string, newPassword: string): Promise<{ message: string }> {
-  return api<{ message: string }>('/auth/reset-password-otp', {
-    method: 'POST',
-    body: JSON.stringify({ email, otp, newPassword }),
-  })
-}
-
 export function getMe(): Promise<AuthUser | null> {
   return api<AuthUser | null>('/auth/me')
 }
