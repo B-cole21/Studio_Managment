@@ -698,6 +698,10 @@ function createTransporter() {
     host,
     port,
     secure: port === 465,
+    family: 4,
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 10000,
     auth: { user, pass },
   })
 }
