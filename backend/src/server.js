@@ -687,35 +687,44 @@ function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000).toString()
 }
 
-function createTransporter() {
+async function resolveIpv4Host(hostname) {
+  try {
+    const ips = await dns.promises.resolve4(hostname)
+    if (ips && ips.length > 0) {
+      console.log(`[DNS] Resolved ${hostname} to IPv4 IP:`, ips[0])
+      return ips[0]
+    }
+  } catch (err) {
+    console.warn(`[DNS Warning] Could not resolve IPv4 for ${hostname}:`, err.message)
+  }
+  return hostname
+}
+
+async function sendOtpEmail(toEmail, otpCode, userName) {
   const user = process.env.SMTP_USER?.trim()
   const pass = process.env.SMTP_PASS?.trim()
 
   if (!user || !pass) {
-    return null
+    console.warn(`[Mailer Warning] SMTP credentials (SMTP_USER & SMTP_PASS) not set in backend/.env. OTP for ${toEmail} is ${otpCode}`)
+    return { success: false, error: 'SMTP credentials (SMTP_USER & SMTP_PASS) are missing in backend/.env' }
   }
 
-  return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
+  const hostIp = await resolveIpv4Host('smtp.gmail.com')
+  const fromName = process.env.SMTP_FROM_NAME || 'AG Studio'
+
+  const transporter = nodemailer.createTransport({
+    host: hostIp,
     port: 465,
     secure: true,
-    family: 4,
+    tls: {
+      servername: 'smtp.gmail.com',
+      rejectUnauthorized: false,
+    },
     auth: { user, pass },
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000,
   })
-}
-
-async function sendOtpEmail(toEmail, otpCode, userName) {
-  const transporter = createTransporter()
-  if (!transporter) {
-    console.warn(`[Mailer Warning] SMTP credentials (SMTP_USER & SMTP_PASS) not set in backend/.env. OTP for ${toEmail} is ${otpCode}`)
-    return { success: false, error: 'SMTP credentials (SMTP_USER & SMTP_PASS) are missing in backend/.env' }
-  }
-
-  const fromName = process.env.SMTP_FROM_NAME || 'AG Studio'
-  const fromEmail = process.env.SMTP_USER
 
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
@@ -733,7 +742,7 @@ async function sendOtpEmail(toEmail, otpCode, userName) {
 
   try {
     await transporter.sendMail({
-      from: `"${fromName}" <${fromEmail}>`,
+      from: `"${fromName}" <${user}>`,
       to: toEmail,
       subject: `${otpCode} is your ${fromName} password reset verification code`,
       html: htmlContent,
