@@ -687,19 +687,6 @@ function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000).toString()
 }
 
-async function resolveIpv4Host(hostname) {
-  try {
-    const ips = await dns.promises.resolve4(hostname)
-    if (ips && ips.length > 0) {
-      console.log(`[DNS] Resolved ${hostname} to IPv4 IP:`, ips[0])
-      return ips[0]
-    }
-  } catch (err) {
-    console.warn(`[DNS Warning] Could not resolve IPv4 for ${hostname}:`, err.message)
-  }
-  return hostname
-}
-
 async function sendOtpEmail(toEmail, otpCode, userName) {
   const fromName = process.env.SMTP_FROM_NAME || 'AG Studio'
 
@@ -717,7 +704,7 @@ async function sendOtpEmail(toEmail, otpCode, userName) {
     </div>
   `
 
-  // 1. If RESEND_API_KEY is provided, send via Resend HTTPS REST API (Port 443 - Never blocked on Render!)
+  // 1. Send via Resend HTTPS API (Port 443 - Fast & 100% Reliable on Render)
   const resendApiKey = process.env.RESEND_API_KEY?.trim()
   if (resendApiKey) {
     try {
@@ -740,9 +727,14 @@ async function sendOtpEmail(toEmail, otpCode, userName) {
         console.log('[Mailer] Resend email delivered successfully:', data)
         return { success: true }
       }
-      console.warn('[Resend Warning - Falling back to Nodemailer SMTP]', data)
+      console.warn('[Resend Warning]', data)
+      if (data.message && data.message.includes('testing emails')) {
+        return { success: false, error: 'Free Resend account sends test emails to birukyihun491@gmail.com. Please use birukyihun491@gmail.com for testing.' }
+      }
+      return { success: false, error: data.message || 'Failed to send email' }
     } catch (err) {
-      console.warn('[Resend Exception - Falling back to Nodemailer SMTP]', err)
+      console.error('[Resend Exception]', err)
+      return { success: false, error: err.message }
     }
   }
 
@@ -751,20 +743,14 @@ async function sendOtpEmail(toEmail, otpCode, userName) {
   const pass = process.env.SMTP_PASS?.trim()
 
   if (!user || !pass) {
-    console.warn(`[Mailer Warning] SMTP credentials not set in environment. OTP for ${toEmail} is ${otpCode}`)
+    console.warn(`[Mailer Warning] SMTP credentials not set. OTP for ${toEmail} is ${otpCode}`)
     return { success: false, error: 'SMTP credentials or RESEND_API_KEY are missing' }
   }
 
-  const hostIp = await resolveIpv4Host('smtp.gmail.com')
-
   const transporter = nodemailer.createTransport({
-    host: hostIp,
+    host: 'smtp.gmail.com',
     port: 465,
     secure: true,
-    tls: {
-      servername: 'smtp.gmail.com',
-      rejectUnauthorized: false,
-    },
     auth: { user, pass },
     connectionTimeout: 10000,
     greetingTimeout: 10000,
