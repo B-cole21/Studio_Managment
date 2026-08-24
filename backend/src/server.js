@@ -1,5 +1,8 @@
+import dns from 'node:dns'
 import express from 'express'
 import cors from 'cors'
+
+dns.setDefaultResultOrder('ipv4first')
 import session from 'express-session'
 import connectPgSimple from 'connect-pg-simple'
 import nodemailer from 'nodemailer'
@@ -703,6 +706,9 @@ function createTransporter() {
     greetingTimeout: 5000,
     socketTimeout: 10000,
     auth: { user, pass },
+    lookup: (hostname, options, callback) => {
+      dns.lookup(hostname, { ...options, family: 4 }, callback)
+    },
   })
 }
 
