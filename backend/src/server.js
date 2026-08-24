@@ -701,30 +701,7 @@ async function resolveIpv4Host(hostname) {
 }
 
 async function sendOtpEmail(toEmail, otpCode, userName) {
-  const user = process.env.SMTP_USER?.trim()
-  const pass = process.env.SMTP_PASS?.trim()
-
-  if (!user || !pass) {
-    console.warn(`[Mailer Warning] SMTP credentials (SMTP_USER & SMTP_PASS) not set in backend/.env. OTP for ${toEmail} is ${otpCode}`)
-    return { success: false, error: 'SMTP credentials (SMTP_USER & SMTP_PASS) are missing in backend/.env' }
-  }
-
-  const hostIp = await resolveIpv4Host('smtp.gmail.com')
   const fromName = process.env.SMTP_FROM_NAME || 'AG Studio'
-
-  const transporter = nodemailer.createTransport({
-    host: hostIp,
-    port: 465,
-    secure: true,
-    tls: {
-      servername: 'smtp.gmail.com',
-      rejectUnauthorized: false,
-    },
-    auth: { user, pass },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
-  })
 
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
@@ -739,6 +716,62 @@ async function sendOtpEmail(toEmail, otpCode, userName) {
       <p style="font-size: 11px; color: #9ca3af; text-align: center;">© ${new Date().getFullYear()} ${fromName}. All rights reserved.</p>
     </div>
   `
+
+  // 1. If RESEND_API_KEY is provided, send via Resend HTTPS REST API (Port 443 - Never blocked on Render!)
+  const resendApiKey = process.env.RESEND_API_KEY?.trim()
+  if (resendApiKey) {
+    try {
+      console.log(`[Mailer] Sending OTP via Resend HTTPS API to ${toEmail}...`)
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: `${fromName} <onboarding@resend.dev>`,
+          to: [toEmail],
+          subject: `${otpCode} is your ${fromName} password reset verification code`,
+          html: htmlContent,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        console.log('[Mailer] Resend email delivered successfully:', data)
+        return { success: true }
+      }
+      console.error('[Resend Error]', data)
+      return { success: false, error: data.message || 'Failed to send via Resend API' }
+    } catch (err) {
+      console.error('[Resend Exception]', err)
+      return { success: false, error: err.message }
+    }
+  }
+
+  // 2. Fallback to Nodemailer SMTP
+  const user = process.env.SMTP_USER?.trim()
+  const pass = process.env.SMTP_PASS?.trim()
+
+  if (!user || !pass) {
+    console.warn(`[Mailer Warning] SMTP credentials not set in environment. OTP for ${toEmail} is ${otpCode}`)
+    return { success: false, error: 'SMTP credentials or RESEND_API_KEY are missing' }
+  }
+
+  const hostIp = await resolveIpv4Host('smtp.gmail.com')
+
+  const transporter = nodemailer.createTransport({
+    host: hostIp,
+    port: 465,
+    secure: true,
+    tls: {
+      servername: 'smtp.gmail.com',
+      rejectUnauthorized: false,
+    },
+    auth: { user, pass },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+  })
 
   try {
     await transporter.sendMail({
