@@ -740,11 +740,9 @@ async function sendOtpEmail(toEmail, otpCode, userName) {
         console.log('[Mailer] Resend email delivered successfully:', data)
         return { success: true }
       }
-      console.error('[Resend Error]', data)
-      return { success: false, error: data.message || 'Failed to send via Resend API' }
+      console.warn('[Resend Warning - Falling back to Nodemailer SMTP]', data)
     } catch (err) {
-      console.error('[Resend Exception]', err)
-      return { success: false, error: err.message }
+      console.warn('[Resend Exception - Falling back to Nodemailer SMTP]', err)
     }
   }
 
