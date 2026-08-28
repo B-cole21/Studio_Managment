@@ -205,7 +205,22 @@ export function PackagePage() {
     Boolean(draft.date)
 
   const submit = async () => {
-    if (!draftValid) return
+    if (!draftValid || busy) return
+
+    const normalizedName = draft.name.trim().toLowerCase()
+    const existing = state.packages.find(
+      (p) => p.name.trim().toLowerCase() === normalizedName && p.phone === phoneDigits && (draft.date ? p.date === draft.date : true)
+    )
+    if (existing) {
+      pushToast({
+        tone: 'error',
+        title: 'Data is already present',
+        message: `Package for "${draft.name.trim()}" with phone ${phoneDigits} already exists! Duplicate entry blocked.`,
+      })
+      return
+    }
+
+    setBusy(true)
     try {
       await addPackage({
         name: draft.name.trim(),
@@ -232,6 +247,8 @@ export function PackagePage() {
         title: 'Could not add package',
         message: err instanceof Error ? err.message : 'Something went wrong',
       })
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -790,7 +807,7 @@ export function PackagePage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setAddOpen(false)}>Cancel</Button>
-            <Button icon={<Plus size={15} />} disabled={!draftValid} onClick={submit}>Add package</Button>
+            <Button icon={<Plus size={15} />} loading={busy} disabled={!draftValid || busy} onClick={submit}>Add package</Button>
           </>
         }
       >

@@ -263,6 +263,15 @@ app.post('/api/package', requireRole(['cashier', 'cameraman', 'owner']), async (
     if (!name || !phone) {
       return res.status(400).json({ error: 'name and phone are required' })
     }
+
+    const { rows: dupRows } = await pool.query(
+      `SELECT id FROM package
+       WHERE LOWER(TRIM(name)) = LOWER(TRIM($1)) AND phone = $2 AND (date = $3::date OR ($3::date IS NULL AND date IS NULL))`,
+      [name.trim(), phone.trim(), date ?? null],
+    )
+    if (dupRows.length > 0) {
+      return res.status(409).json({ error: `Data is already present! Package for "${name.trim()}" with phone ${phone.trim()} already exists.` })
+    }
     const isPending = Boolean(pendingSelection)
     const isCashier = me.role === 'cashier'
     const qty = isPending ? null : (quantity ?? 1)
