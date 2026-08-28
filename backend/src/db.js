@@ -34,9 +34,6 @@ pool.query('ALTER TABLE package ALTER COLUMN remainder_payment_type DROP NOT NUL
 pool.query('ALTER TABLE settings ADD COLUMN IF NOT EXISTS allow_double_booking BOOLEAN DEFAULT TRUE').catch(() => {})
 pool.query('ALTER TABLE settings ADD COLUMN IF NOT EXISTS camera_count INTEGER DEFAULT 2').catch(() => {})
 
-// Auto-migration: users table OTP columns for password reset
-pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp TEXT').catch(() => {})
-pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp_expires_at TIMESTAMPTZ').catch(() => {})
 
 // Auto-migration & Performance Indexes
 pool.query('CREATE INDEX IF NOT EXISTS idx_booking_date ON booking (date)').catch(() => {})

@@ -13,9 +13,7 @@ CREATE TABLE users (
   user_name TEXT NOT NULL UNIQUE,
   password  TEXT NOT NULL,
   email     TEXT,
-  role      TEXT NOT NULL DEFAULT 'cameraman',
-  reset_otp TEXT,
-  reset_otp_expires_at TIMESTAMPTZ
+  role      TEXT NOT NULL DEFAULT 'cameraman'
 );
 
 CREATE TABLE service (

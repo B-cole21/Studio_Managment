@@ -158,7 +158,7 @@ export function Login() {
         <div className="mt-8 text-center text-xs text-text-muted">
           Developed by{' '}
           <a
-            href="https://birukyihun.netlify.app/"
+            href="https://bcole-portfolio.vercel.app"
             target="_blank"
             rel="noopener noreferrer"
             className="font-bold text-amber-400 hover:text-amber-300 transition-colors underline decoration-amber-400/50 decoration-2 underline-offset-4"

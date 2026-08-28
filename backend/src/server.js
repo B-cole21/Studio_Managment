@@ -36,8 +36,6 @@ const authLimiter = rateLimit({
 })
 
 app.use('/api/auth/login', authLimiter)
-app.use('/api/auth/request-otp', authLimiter)
-app.use('/api/auth/reset-password-otp', authLimiter)
 
 app.use((req, res, next) => {
   const origin = req.headers.origin
