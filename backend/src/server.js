@@ -647,20 +647,29 @@ app.get('/api/settings', async (_req, res, next) => {
 app.put('/api/settings', async (req, res, next) => {
   try {
     const { studioName, phone, address, hours, backupAt, allowDoubleBooking, cameraCount } = req.body
+    const hoursJson = hours !== undefined ? (typeof hours === 'string' ? hours : JSON.stringify(hours)) : null
     const { rows } = await pool.query(
       `INSERT INTO settings (id, studio_name, phone, address, hours, backup_at, allow_double_booking, camera_count)
-       VALUES (1, $1, $2, $3, $4, $5, $6, $7)
+       VALUES (1, $1, $2, $3, $4::jsonb, $5, $6, $7)
        ON CONFLICT (id) DO UPDATE SET
          studio_name = COALESCE($1, settings.studio_name),
          phone = COALESCE($2, settings.phone),
          address = COALESCE($3, settings.address),
-         hours = COALESCE($4, settings.hours),
+         hours = CASE WHEN $4::jsonb IS NOT NULL THEN $4::jsonb ELSE settings.hours END,
          backup_at = COALESCE($5, settings.backup_at),
          allow_double_booking = COALESCE($6, settings.allow_double_booking),
          camera_count = COALESCE($7, settings.camera_count)
        RETURNING studio_name AS "studioName", phone, address, hours, backup_at AS "backupAt",
                  allow_double_booking AS "allowDoubleBooking", camera_count AS "cameraCount"`,
-      [studioName, phone, address, hours, backupAt, allowDoubleBooking ?? true, cameraCount ?? 2],
+      [
+        studioName !== undefined ? studioName : null,
+        phone !== undefined ? phone : null,
+        address !== undefined ? address : null,
+        hoursJson,
+        backupAt !== undefined ? backupAt : null,
+        allowDoubleBooking !== undefined ? allowDoubleBooking : null,
+        cameraCount !== undefined ? cameraCount : null,
+      ],
     )
     res.json(rows[0])
   } catch (err) {

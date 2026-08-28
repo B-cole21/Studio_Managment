@@ -39,11 +39,24 @@ export function Settings() {
   const [editingService, setEditingService] = useState<string | null>(null)
   const [deletingService, setDeletingService] = useState<Service | null>(null)
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
 
-  const saveGeneral = () => {
-    updateSettings(form)
-    setSaved(true)
-    window.setTimeout(() => setSaved(false), 2000)
+  const saveGeneral = async () => {
+    setSaving(true)
+    try {
+      await updateSettings(form)
+      setSaved(true)
+      pushToast({ tone: 'success', title: 'Settings saved', message: 'Studio information updated successfully' })
+      window.setTimeout(() => setSaved(false), 2000)
+    } catch (err) {
+      pushToast({
+        tone: 'error',
+        title: 'Could not save settings',
+        message: err instanceof Error ? err.message : 'Something went wrong',
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
   const confirmDeleteService = async () => {
@@ -131,7 +144,7 @@ export function Settings() {
                   <Textarea label="Address" value={form.address ?? ''} onChange={(e) => setForm({ ...form, address: e.target.value })} />
                   <div className="flex items-center justify-end gap-2 border-t border-border-subtle pt-4">
                     {saved && <Badge tone="success">Saved</Badge>}
-                    <Button icon={<Save size={15} />} onClick={saveGeneral}>Save changes</Button>
+                    <Button icon={<Save size={15} />} loading={saving} disabled={saving} onClick={saveGeneral}>Save changes</Button>
                   </div>
                 </div>
               </div>

@@ -299,13 +299,8 @@ export const useStore = create<StoreState>()((set, get) => ({
   },
 
   updateSettings: async (partial) => {
-    set((s) => ({ settings: { ...s.settings, ...partial } }))
-    try {
-      const saved = await updateSettingsApi(partial)
-      set((s) => ({ settings: { ...s.settings, ...saved } }))
-    } catch {
-      /* local state updated */
-    }
+    const saved = await updateSettingsApi(partial)
+    set((s) => ({ settings: { ...s.settings, ...saved } }))
   },
 
   addService: async (input) => {
