@@ -339,19 +339,21 @@ app.put('/api/package/:id', requireRole(['cashier', 'owner', 'cameraman']), asyn
     const updates = []
     const values = []
 
-    if (name != null && name.trim() && name.trim() !== pkg.name) {
+    if (name !== undefined && name.trim()) {
       updates.push('name = $' + (values.length + 2))
       values.push(name.trim())
     }
 
-    if (phone != null && phone.trim() !== (pkg.phone ?? '')) {
+    if (phone !== undefined) {
       updates.push('phone = $' + (values.length + 2))
       values.push(phone.trim())
     }
 
-    if (pendingSelection === false && pkg.pendingSelection) {
-      updates.push('pending_selection = FALSE')
-      if (me.role !== 'owner') {
+    if (pendingSelection !== undefined) {
+      const isPending = Boolean(pendingSelection)
+      updates.push('pending_selection = $' + (values.length + 2))
+      values.push(isPending)
+      if (!isPending && pkg.pendingSelection && me.role !== 'owner') {
         updates.push('first_confirmed = FALSE')
         updates.push('first_confirmed_by = NULL')
         updates.push('first_confirmed_at = NULL')
@@ -370,110 +372,128 @@ app.put('/api/package/:id', requireRole(['cashier', 'owner', 'cameraman']), asyn
       }
     }
 
-    if (quantity != null && Number(quantity) !== Number(pkg.quantity)) {
-      if (!pkg.pendingSelection && pkg.firstConfirmed && me.role !== 'owner' && me.role !== 'cashier') return res.status(400).json({ error: 'Package is confirmed and locked' })
-      if (Number(quantity) <= 0) return res.status(400).json({ error: 'Quantity must be positive' })
+    if (quantity !== undefined) {
+      const qty = Number(quantity)
+      if (!pkg.pendingSelection && pkg.firstConfirmed && me.role !== 'owner' && me.role !== 'cashier' && qty !== Number(pkg.quantity)) {
+        return res.status(400).json({ error: 'Package is confirmed and locked' })
+      }
+      if (qty <= 0) return res.status(400).json({ error: 'Quantity must be positive' })
       updates.push('quantity = $' + (values.length + 2))
-      values.push(Number(quantity))
+      values.push(qty)
     }
 
-    if (frame != null && frame !== (pkg.frame ?? '')) {
+    if (frame !== undefined) {
       updates.push('frame = $' + (values.length + 2))
-      values.push(frame || null)
+      values.push(frame ? frame.trim() : null)
     }
 
-    if (date != null && date !== pkg.date) {
+    if (date !== undefined) {
       updates.push('date = $' + (values.length + 2))
-      values.push(date)
+      values.push(date || null)
     }
 
-    if (paymentType != null && paymentType !== pkg.paymentType) {
+    if (paymentType !== undefined && paymentType != null) {
       const type = ['Cash', 'Bank'].includes(paymentType) ? paymentType : 'Cash'
       updates.push('payment_type = $' + (values.length + 2))
       values.push(type)
     }
 
-    if (fullPayment != null && Boolean(fullPayment) !== pkg.fullPayment) {
+    if (fullPayment !== undefined) {
+      const isFull = Boolean(fullPayment)
       updates.push('full_payment = $' + (values.length + 2))
-      values.push(Boolean(fullPayment))
-      if (fullPayment) {
+      values.push(isFull)
+      if (isFull) {
         updates.push('remainder = 0')
       }
     }
 
-    if (firstPayment != null && Number(firstPayment) !== Number(pkg.firstPayment)) {
+    if (firstPayment !== undefined) {
+      const first = Number(firstPayment)
       const isCompleting = pendingSelection === false && pkg.pendingSelection
-      if (pkg.firstConfirmed && !isCompleting && me.role !== 'owner' && me.role !== 'cashier') return res.status(400).json({ error: 'First payment is confirmed and locked' })
-      if (!pkg.pendingSelection && !isCompleting && me.role !== 'owner' && me.role !== 'cashier') return res.status(403).json({ error: 'Only the cashier or owner can change the first payment' })
-      if (Number(firstPayment) < 0) return res.status(400).json({ error: 'Payments cannot be negative' })
+      if (pkg.firstConfirmed && !isCompleting && me.role !== 'owner' && me.role !== 'cashier' && first !== Number(pkg.firstPayment)) {
+        return res.status(400).json({ error: 'First payment is confirmed and locked' })
+      }
+      if (!pkg.pendingSelection && !isCompleting && me.role !== 'owner' && me.role !== 'cashier' && first !== Number(pkg.firstPayment)) {
+        return res.status(403).json({ error: 'Only the cashier or owner can change the first payment' })
+      }
+      if (first < 0) return res.status(400).json({ error: 'Payments cannot be negative' })
       updates.push('first_payment = $' + (values.length + 2))
-      values.push(Number(firstPayment))
-      if (me.role !== 'owner' && pkg.firstCashierConfirmed) {
-        updates.push('first_cashier_confirmed = FALSE')
-        updates.push('first_cashier_confirmed_by = NULL')
-        updates.push('first_cashier_confirmed_at = NULL')
-      }
-      if (pkg.firstConfirmed) {
-        updates.push('first_confirmed = FALSE')
-        updates.push('first_confirmed_by = NULL')
-        updates.push('first_confirmed_at = NULL')
+      values.push(first)
+      if (first !== Number(pkg.firstPayment)) {
+        if (me.role !== 'owner' && pkg.firstCashierConfirmed) {
+          updates.push('first_cashier_confirmed = FALSE')
+          updates.push('first_cashier_confirmed_by = NULL')
+          updates.push('first_cashier_confirmed_at = NULL')
+        }
+        if (pkg.firstConfirmed) {
+          updates.push('first_confirmed = FALSE')
+          updates.push('first_confirmed_by = NULL')
+          updates.push('first_confirmed_at = NULL')
+        }
       }
     }
 
-    if (secondPayment != null && Number(secondPayment) !== Number(pkg.secondPayment)) {
-      if (Number(secondPayment) < 0) return res.status(400).json({ error: 'Payments cannot be negative' })
+    if (secondPayment !== undefined) {
+      const second = Number(secondPayment)
+      if (second < 0) return res.status(400).json({ error: 'Payments cannot be negative' })
       updates.push('second_payment = $' + (values.length + 2))
-      values.push(Number(secondPayment))
-      if (me.role === 'cashier' && Number(secondPayment) > 0) {
-        updates.push('second_payment_cashier_confirmed = TRUE')
-        updates.push('second_payment_cashier_confirmed_by = $' + (values.length + 2))
-        values.push(me.id)
-        updates.push('second_payment_cashier_confirmed_at = NOW()')
-      } else if (pkg.secondPaymentCashierConfirmed) {
-        updates.push('second_payment_cashier_confirmed = FALSE')
-        updates.push('second_payment_cashier_confirmed_by = NULL')
-        updates.push('second_payment_cashier_confirmed_at = NULL')
-      }
-      if (pkg.secondPaymentConfirmed) {
-        updates.push('second_payment_confirmed = FALSE')
-        updates.push('second_payment_confirmed_by = NULL')
-        updates.push('second_payment_confirmed_at = NULL')
+      values.push(second)
+      if (second !== Number(pkg.secondPayment)) {
+        if (me.role === 'cashier' && second > 0) {
+          updates.push('second_payment_cashier_confirmed = TRUE')
+          updates.push('second_payment_cashier_confirmed_by = $' + (values.length + 2))
+          values.push(me.id)
+          updates.push('second_payment_cashier_confirmed_at = NOW()')
+        } else if (pkg.secondPaymentCashierConfirmed) {
+          updates.push('second_payment_cashier_confirmed = FALSE')
+          updates.push('second_payment_cashier_confirmed_by = NULL')
+          updates.push('second_payment_cashier_confirmed_at = NULL')
+        }
+        if (pkg.secondPaymentConfirmed) {
+          updates.push('second_payment_confirmed = FALSE')
+          updates.push('second_payment_confirmed_by = NULL')
+          updates.push('second_payment_confirmed_at = NULL')
+        }
       }
     }
 
-    if (remainder != null && Number(remainder) !== Number(pkg.remainder)) {
-      if (pkg.fullPayment) return res.status(400).json({ error: 'Full payment package cannot have a remainder' })
-      if (pkg.remainderConfirmed && me.role !== 'owner' && me.role !== 'cashier') return res.status(400).json({ error: 'Remainder is confirmed and locked' })
-      if (Number(remainder) < 0) return res.status(400).json({ error: 'Payments cannot be negative' })
+    if (remainder !== undefined) {
+      const rest = Number(remainder)
+      if (pkg.fullPayment && !fullPayment) return res.status(400).json({ error: 'Full payment package cannot have a remainder' })
+      if (pkg.remainderConfirmed && me.role !== 'owner' && me.role !== 'cashier' && rest !== Number(pkg.remainder)) {
+        return res.status(400).json({ error: 'Remainder is confirmed and locked' })
+      }
+      if (rest < 0) return res.status(400).json({ error: 'Payments cannot be negative' })
       updates.push('remainder = $' + (values.length + 2))
-      values.push(Number(remainder))
-      if (me.role !== 'owner' && pkg.remainderConfirmed) {
+      values.push(rest)
+      if (rest !== Number(pkg.remainder) && me.role !== 'owner' && pkg.remainderConfirmed) {
         updates.push('remainder_confirmed = FALSE')
         updates.push('remainder_confirmed_by = NULL')
         updates.push('remainder_confirmed_at = NULL')
       }
     }
 
-    if (remainderReceived != null && remainderReceived !== pkg.remainderReceived) {
-      if (pkg.fullPayment) return res.status(400).json({ error: 'Full payment package has no remainder' })
-      if (pkg.remainderConfirmed && me.role !== 'owner' && me.role !== 'cashier') return res.status(400).json({ error: 'Remainder is confirmed and locked' })
+    if (remainderReceived !== undefined) {
+      const isReceived = Boolean(remainderReceived)
       updates.push('remainder_received = $' + (values.length + 2))
-      values.push(Boolean(remainderReceived))
-      updates.push('remainder_received_at = ' + (remainderReceived ? 'NOW()' : 'NULL'))
-      if (me.role !== 'owner') {
-        updates.push('remainder_confirmed = FALSE')
-        updates.push('remainder_confirmed_by = NULL')
-        updates.push('remainder_confirmed_at = NULL')
-      }
-      if (remainderReceived && me.role === 'cashier') {
-        updates.push('remainder_cashier_confirmed = TRUE')
-        updates.push('remainder_cashier_confirmed_by = $' + (values.length + 2))
-        values.push(me.id)
-        updates.push('remainder_cashier_confirmed_at = NOW()')
+      values.push(isReceived)
+      updates.push('remainder_received_at = ' + (isReceived ? 'NOW()' : 'NULL'))
+      if (isReceived !== pkg.remainderReceived) {
+        if (me.role !== 'owner') {
+          updates.push('remainder_confirmed = FALSE')
+          updates.push('remainder_confirmed_by = NULL')
+          updates.push('remainder_confirmed_at = NULL')
+        }
+        if (isReceived && me.role === 'cashier') {
+          updates.push('remainder_cashier_confirmed = TRUE')
+          updates.push('remainder_cashier_confirmed_by = $' + (values.length + 2))
+          values.push(me.id)
+          updates.push('remainder_cashier_confirmed_at = NOW()')
+        }
       }
     }
 
-    if (remainderPaymentType !== undefined && remainderPaymentType !== pkg.remainderPaymentType) {
+    if (remainderPaymentType !== undefined) {
       const rt = ['Cash', 'Bank'].includes(remainderPaymentType) ? remainderPaymentType : null
       updates.push('remainder_payment_type = $' + (values.length + 2))
       values.push(rt)
