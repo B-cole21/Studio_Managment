@@ -236,6 +236,34 @@ const packageSelect = `
          remainder_payment_type AS "remainderPaymentType"
   FROM package`
 
+const packageReturning = `
+  RETURNING id, name, phone, quantity, frame, first_payment AS "firstPayment",
+            second_payment AS "secondPayment",
+            remainder, date::text AS "date", payment_type AS "paymentType",
+            full_payment AS "fullPayment",
+            first_confirmed AS "firstConfirmed", first_confirmed_by AS "firstConfirmedBy",
+            first_confirmed_at AS "firstConfirmedAt",
+            first_cashier_confirmed AS "firstCashierConfirmed",
+            first_cashier_confirmed_by AS "firstCashierConfirmedBy",
+            first_cashier_confirmed_at AS "firstCashierConfirmedAt",
+            remainder_received AS "remainderReceived",
+            remainder_received_at AS "remainderReceivedAt",
+            remainder_confirmed AS "remainderConfirmed",
+            remainder_confirmed_by AS "remainderConfirmedBy",
+            remainder_confirmed_at AS "remainderConfirmedAt",
+            remainder_cashier_confirmed AS "remainderCashierConfirmed",
+            remainder_cashier_confirmed_by AS "remainderCashierConfirmedBy",
+            remainder_cashier_confirmed_at AS "remainderCashierConfirmedAt",
+            second_payment_confirmed AS "secondPaymentConfirmed",
+            second_payment_confirmed_by AS "secondPaymentConfirmedBy",
+            second_payment_confirmed_at AS "secondPaymentConfirmedAt",
+            second_payment_cashier_confirmed AS "secondPaymentCashierConfirmed",
+            second_payment_cashier_confirmed_by AS "secondPaymentCashierConfirmedBy",
+            second_payment_cashier_confirmed_at AS "secondPaymentCashierConfirmedAt",
+            created_by AS "createdBy", created_by_name AS "createdByName",
+            pending_selection AS "pendingSelection",
+            remainder_payment_type AS "remainderPaymentType"`
+
 function requireRole(roles) {
   return (req, res, next) => {
     const role = req.session.user?.role
@@ -290,30 +318,7 @@ app.post('/api/package', requireRole(['cashier', 'cameraman', 'owner']), async (
                             first_cashier_confirmed, first_cashier_confirmed_by, first_cashier_confirmed_at,
                             remainder_payment_type)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-       RETURNING id, name, phone, quantity, frame, first_payment AS "firstPayment",
-                 second_payment AS "secondPayment",
-                 remainder, date::text AS "date", payment_type AS "paymentType", full_payment AS "fullPayment",
-                 first_confirmed AS "firstConfirmed", first_confirmed_by AS "firstConfirmedBy",
-                 first_confirmed_at AS "firstConfirmedAt",
-                 first_cashier_confirmed AS "firstCashierConfirmed",
-                 first_cashier_confirmed_by AS "firstCashierConfirmedBy",
-                 first_cashier_confirmed_at AS "firstCashierConfirmedAt",
-                 remainder_received AS "remainderReceived",
-                 remainder_received_at AS "remainderReceivedAt",
-                 remainder_confirmed AS "remainderConfirmed",
-                 remainder_confirmed_by AS "remainderConfirmedBy",
-                 remainder_confirmed_at AS "remainderConfirmedAt",
-                 remainder_cashier_confirmed AS "remainderCashierConfirmed",
-                 remainder_cashier_confirmed_by AS "remainderCashierConfirmedBy",
-                 remainder_cashier_confirmed_at AS "remainderCashierConfirmedAt",
-                 second_payment_confirmed AS "secondPaymentConfirmed",
-                 second_payment_confirmed_by AS "secondPaymentConfirmedBy",
-                 second_payment_confirmed_at AS "secondPaymentConfirmedAt",
-                 second_payment_cashier_confirmed AS "secondPaymentCashierConfirmed",
-                 second_payment_cashier_confirmed_by AS "secondPaymentCashierConfirmedBy",
-                 second_payment_cashier_confirmed_at AS "secondPaymentCashierConfirmedAt",
-                 created_by AS "createdBy", created_by_name AS "createdByName", pending_selection AS "pendingSelection",
-                 remainder_payment_type AS "remainderPaymentType"`,
+       ${packageReturning}`,
       [id, name, phone, qty, frame ?? null, first, second, rest, date ?? null, type, full, me.id, me.userName, isPending,
        isCashier, isCashier ? me.id : null, isCashier ? new Date() : null, rType],
     )
@@ -476,9 +481,8 @@ app.put('/api/package/:id', requireRole(['cashier', 'owner', 'cameraman']), asyn
 
     if (updates.length === 0) return res.json(pkg)
 
-    const sql = `UPDATE package SET ${updates.join(', ')} WHERE id = $1`
-    await pool.query(sql, [req.params.id, ...values])
-    const { rows: updated } = await pool.query(`${packageSelect} WHERE id = $1`, [req.params.id])
+    const sql = `UPDATE package SET ${updates.join(', ')} WHERE id = $1 ${packageReturning}`
+    const { rows: updated } = await pool.query(sql, [req.params.id, ...values])
     res.json(updated[0])
   } catch (err) {
     next(err)
@@ -493,13 +497,12 @@ app.post('/api/package/:id/cashier-confirm-first', requireRole(['cashier']), asy
     if (!pkg) return res.status(404).json({ error: 'Package not found' })
     if (pkg.firstCashierConfirmed) return res.status(400).json({ error: 'First payment already cashier-confirmed' })
     if (pkg.firstConfirmed) return res.status(400).json({ error: 'First payment already confirmed by owner' })
-    await pool.query(
+    const { rows: updated } = await pool.query(
       `UPDATE package
        SET first_cashier_confirmed = TRUE, first_cashier_confirmed_by = $2, first_cashier_confirmed_at = NOW()
-       WHERE id = $1`,
+       WHERE id = $1 ${packageReturning}`,
       [req.params.id, me.id],
     )
-    const { rows: updated } = await pool.query(`${packageSelect} WHERE id = $1`, [req.params.id])
     res.json(updated[0])
   } catch (err) {
     next(err)
@@ -514,13 +517,12 @@ app.post('/api/package/:id/confirm-first', requireRole(['owner']), async (req, r
     if (!pkg) return res.status(404).json({ error: 'Package not found' })
     if (pkg.firstConfirmed) return res.status(400).json({ error: 'First payment already confirmed' })
     if (pkg.paymentType === 'Cash' && !pkg.firstCashierConfirmed) return res.status(400).json({ error: 'Cashier has not confirmed the first payment yet' })
-    await pool.query(
+    const { rows: updated } = await pool.query(
       `UPDATE package
        SET first_confirmed = TRUE, first_confirmed_by = $2, first_confirmed_at = NOW()
-       WHERE id = $1`,
+       WHERE id = $1 ${packageReturning}`,
       [req.params.id, me.id],
     )
-    const { rows: updated } = await pool.query(`${packageSelect} WHERE id = $1`, [req.params.id])
     res.json(updated[0])
   } catch (err) {
     next(err)
@@ -536,13 +538,12 @@ app.post('/api/package/:id/cashier-confirm-remainder', requireRole(['cashier']),
     if (pkg.remainderCashierConfirmed) return res.status(400).json({ error: 'Remainder already cashier-confirmed' })
     if (pkg.remainderConfirmed) return res.status(400).json({ error: 'Remainder already confirmed by owner' })
     if (!pkg.remainderReceived) return res.status(400).json({ error: 'Remainder payment has not been recorded yet' })
-    await pool.query(
+    const { rows: updated } = await pool.query(
       `UPDATE package
        SET remainder_cashier_confirmed = TRUE, remainder_cashier_confirmed_by = $2, remainder_cashier_confirmed_at = NOW()
-       WHERE id = $1`,
+       WHERE id = $1 ${packageReturning}`,
       [req.params.id, me.id],
     )
-    const { rows: updated } = await pool.query(`${packageSelect} WHERE id = $1`, [req.params.id])
     res.json(updated[0])
   } catch (err) {
     next(err)
@@ -560,13 +561,12 @@ app.post('/api/package/:id/confirm-remainder', requireRole(['owner']), async (re
     if (!pkg.remainderReceived) return res.status(400).json({ error: 'The remainder payment has not been recorded yet' })
     const effectiveRemainderType = pkg.remainderPaymentType || pkg.paymentType
     if (effectiveRemainderType === 'Cash' && !pkg.remainderCashierConfirmed) return res.status(400).json({ error: 'Cashier has not confirmed the remainder payment yet' })
-    await pool.query(
+    const { rows: updated } = await pool.query(
       `UPDATE package
        SET remainder_confirmed = TRUE, remainder_confirmed_by = $2, remainder_confirmed_at = NOW()
-       WHERE id = $1`,
+       WHERE id = $1 ${packageReturning}`,
       [req.params.id, me.id],
     )
-    const { rows: updated } = await pool.query(`${packageSelect} WHERE id = $1`, [req.params.id])
     res.json(updated[0])
   } catch (err) {
     next(err)
@@ -582,13 +582,12 @@ app.post('/api/package/:id/cashier-confirm-second', requireRole(['cashier']), as
     if (pkg.secondPayment <= 0) return res.status(400).json({ error: 'No second payment on this package' })
     if (pkg.secondPaymentCashierConfirmed) return res.status(400).json({ error: 'Second payment already cashier-confirmed' })
     if (pkg.secondPaymentConfirmed) return res.status(400).json({ error: 'Second payment already confirmed by owner' })
-    await pool.query(
+    const { rows: updated } = await pool.query(
       `UPDATE package
        SET second_payment_cashier_confirmed = TRUE, second_payment_cashier_confirmed_by = $2, second_payment_cashier_confirmed_at = NOW()
-       WHERE id = $1`,
+       WHERE id = $1 ${packageReturning}`,
       [req.params.id, me.id],
     )
-    const { rows: updated } = await pool.query(`${packageSelect} WHERE id = $1`, [req.params.id])
     res.json(updated[0])
   } catch (err) {
     next(err)
@@ -604,13 +603,12 @@ app.post('/api/package/:id/confirm-second', requireRole(['owner']), async (req, 
     if (pkg.secondPayment <= 0) return res.status(400).json({ error: 'No second payment on this package' })
     if (pkg.secondPaymentConfirmed) return res.status(400).json({ error: 'Second payment already confirmed' })
     if (pkg.paymentType === 'Cash' && !pkg.secondPaymentCashierConfirmed) return res.status(400).json({ error: 'Cashier has not confirmed the second payment yet' })
-    await pool.query(
+    const { rows: updated } = await pool.query(
       `UPDATE package
        SET second_payment_confirmed = TRUE, second_payment_confirmed_by = $2, second_payment_confirmed_at = NOW()
-       WHERE id = $1`,
+       WHERE id = $1 ${packageReturning}`,
       [req.params.id, me.id],
     )
-    const { rows: updated } = await pool.query(`${packageSelect} WHERE id = $1`, [req.params.id])
     res.json(updated[0])
   } catch (err) {
     next(err)

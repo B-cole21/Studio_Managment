@@ -266,19 +266,22 @@ export function PackagePage() {
     if (!remainderTarget) return
     const value = Number(remainderValue)
     if (value < 0 || remainderValue.trim() === '') return
+    const target = remainderTarget
+    const rec = remainderReceived
+    const pType = remainderPaymentType
+    setRemainderTarget(null)
     setBusy(true)
     try {
-      await updatePackage(remainderTarget.id, {
+      await updatePackage(target.id, {
         remainder: value,
-        remainderReceived,
-        remainderPaymentType: remainderReceived ? remainderPaymentType : null,
+        remainderReceived: rec,
+        remainderPaymentType: rec ? pType : null,
       })
       pushToast({
         tone: 'success',
-        title: remainderReceived ? 'Remainder payment recorded' : 'Remainder updated',
-        message: `${remainderTarget.name} · ${fmt(value)}`,
+        title: rec ? 'Remainder payment recorded' : 'Remainder updated',
+        message: `${target.name} · ${fmt(value)}`,
       })
-      setRemainderTarget(null)
     } catch (err) {
       pushToast({
         tone: 'error',
@@ -292,22 +295,22 @@ export function PackagePage() {
 
   const doConfirmFirst = async () => {
     if (!confirmFirstTarget) return
+    const target = confirmFirstTarget
+    setConfirmFirstTarget(null)
     setBusy(true)
     try {
-      await confirmFirst(confirmFirstTarget.id)
+      await confirmFirst(target.id)
       pushToast({
         tone: 'success',
         title: 'First payment confirmed',
-        message: `${confirmFirstTarget.name} · ${fmt(confirmFirstTarget.firstPayment)} received`,
+        message: `${target.name} · ${fmt(target.firstPayment)} received`,
       })
-      setConfirmFirstTarget(null)
     } catch (err) {
       pushToast({
         tone: 'error',
         title: 'Could not confirm',
         message: err instanceof Error ? err.message : 'Something went wrong',
       })
-      setConfirmFirstTarget(null)
     } finally {
       setBusy(false)
     }
@@ -315,22 +318,22 @@ export function PackagePage() {
 
   const doConfirmRemainder = async () => {
     if (!confirmRemainderTarget) return
+    const target = confirmRemainderTarget
+    setConfirmRemainderTarget(null)
     setBusy(true)
     try {
-      await confirmRemainder(confirmRemainderTarget.id)
+      await confirmRemainder(target.id)
       pushToast({
         tone: 'success',
         title: 'Remainder payment confirmed',
-        message: `${confirmRemainderTarget.name} · fully paid`,
+        message: `${target.name} · fully paid`,
       })
-      setConfirmRemainderTarget(null)
     } catch (err) {
       pushToast({
         tone: 'error',
         title: 'Could not confirm',
         message: err instanceof Error ? err.message : 'Something went wrong',
       })
-      setConfirmRemainderTarget(null)
     } finally {
       setBusy(false)
     }
@@ -338,22 +341,22 @@ export function PackagePage() {
 
   const doCashierConfirmFirst = async () => {
     if (!cashierConfirmFirstTarget) return
+    const target = cashierConfirmFirstTarget
+    setCashierConfirmFirstTarget(null)
     setBusy(true)
     try {
-      await cashierConfirmFirst(cashierConfirmFirstTarget.id)
+      await cashierConfirmFirst(target.id)
       pushToast({
         tone: 'success',
         title: 'First payment confirmed',
-        message: `${cashierConfirmFirstTarget.name} · ${fmt(cashierConfirmFirstTarget.firstPayment)} received`,
+        message: `${target.name} · ${fmt(target.firstPayment)} received`,
       })
-      setCashierConfirmFirstTarget(null)
     } catch (err) {
       pushToast({
         tone: 'error',
         title: 'Could not confirm',
         message: err instanceof Error ? err.message : 'Something went wrong',
       })
-      setCashierConfirmFirstTarget(null)
     } finally {
       setBusy(false)
     }
@@ -361,22 +364,22 @@ export function PackagePage() {
 
   const doCashierConfirmRemainder = async () => {
     if (!cashierConfirmRemainderTarget) return
+    const target = cashierConfirmRemainderTarget
+    setCashierConfirmRemainderTarget(null)
     setBusy(true)
     try {
-      await cashierConfirmRemainder(cashierConfirmRemainderTarget.id)
+      await cashierConfirmRemainder(target.id)
       pushToast({
         tone: 'success',
         title: 'Remainder payment confirmed',
-        message: `${cashierConfirmRemainderTarget.name} · ${fmt(cashierConfirmRemainderTarget.remainder)} received`,
+        message: `${target.name} · ${fmt(target.remainder)} received`,
       })
-      setCashierConfirmRemainderTarget(null)
     } catch (err) {
       pushToast({
         tone: 'error',
         title: 'Could not confirm',
         message: err instanceof Error ? err.message : 'Something went wrong',
       })
-      setCashierConfirmRemainderTarget(null)
     } finally {
       setBusy(false)
     }
@@ -384,22 +387,22 @@ export function PackagePage() {
 
   const doCashierConfirmSecond = async () => {
     if (!cashierConfirmSecondTarget) return
+    const target = cashierConfirmSecondTarget
+    setCashierConfirmSecondTarget(null)
     setBusy(true)
     try {
-      await cashierConfirmSecond(cashierConfirmSecondTarget.id)
+      await cashierConfirmSecond(target.id)
       pushToast({
         tone: 'success',
         title: 'Second payment confirmed',
-        message: `${cashierConfirmSecondTarget.name} · ${fmt(cashierConfirmSecondTarget.secondPayment)} received`,
+        message: `${target.name} · ${fmt(target.secondPayment)} received`,
       })
-      setCashierConfirmSecondTarget(null)
     } catch (err) {
       pushToast({
         tone: 'error',
         title: 'Could not confirm',
         message: err instanceof Error ? err.message : 'Something went wrong',
       })
-      setCashierConfirmSecondTarget(null)
     } finally {
       setBusy(false)
     }
@@ -407,22 +410,22 @@ export function PackagePage() {
 
   const doConfirmSecond = async () => {
     if (!confirmSecondTarget) return
+    const target = confirmSecondTarget
+    setConfirmSecondTarget(null)
     setBusy(true)
     try {
-      await confirmSecond(confirmSecondTarget.id)
+      await confirmSecond(target.id)
       pushToast({
         tone: 'success',
         title: 'Second payment confirmed',
-        message: `${confirmSecondTarget.name} · ${fmt(confirmSecondTarget.secondPayment)} received`,
+        message: `${target.name} · ${fmt(target.secondPayment)} received`,
       })
-      setConfirmSecondTarget(null)
     } catch (err) {
       pushToast({
         tone: 'error',
         title: 'Could not confirm',
         message: err instanceof Error ? err.message : 'Something went wrong',
       })
-      setConfirmSecondTarget(null)
     } finally {
       setBusy(false)
     }
@@ -441,25 +444,27 @@ export function PackagePage() {
     if (qty <= 0 || completeDraft.quantity.trim() === '') return
     if (!completeDraft.fullPayment && (rest < 0 || completeDraft.remainder.trim() === '')) return
     if (second < 0) return
+    const target = completeTarget
+    const payload = {
+      quantity: qty,
+      frame: completeDraft.frame.trim(),
+      secondPayment: second,
+      remainder: completeDraft.fullPayment ? 0 : rest,
+      date: completeDraft.date,
+      paymentType: completeDraft.paymentType,
+      fullPayment: completeDraft.fullPayment,
+      remainderReceived: completeDraft.remainderReceived,
+      pendingSelection: false,
+    }
+    setCompleteTarget(null)
     setBusy(true)
     try {
-      await updatePackage(completeTarget.id, {
-        quantity: qty,
-        frame: completeDraft.frame.trim(),
-        secondPayment: second,
-        remainder: completeDraft.fullPayment ? 0 : rest,
-        date: completeDraft.date,
-        paymentType: completeDraft.paymentType,
-        fullPayment: completeDraft.fullPayment,
-        remainderReceived: completeDraft.remainderReceived,
-        pendingSelection: false,
-      })
+      await updatePackage(target.id, payload)
       pushToast({
         tone: 'success',
         title: 'Package completed',
-        message: `${completeTarget.name} · ${qty} photos` + (second > 0 ? ` · +${fmt(second)}` : ''),
+        message: `${target.name} · ${qty} photos` + (second > 0 ? ` · +${fmt(second)}` : ''),
       })
-      setCompleteTarget(null)
     } catch (err) {
       pushToast({
         tone: 'error',
@@ -490,28 +495,30 @@ export function PackagePage() {
 
   const submitEditPackage = async () => {
     if (!editPackageTarget) return
+    const target = editPackageTarget
+    const phoneDigits = editPackageDraft.phone.replace(/\D/g, '')
+    const payload = {
+      name: editPackageDraft.name.trim(),
+      phone: phoneDigits,
+      date: editPackageDraft.date,
+      quantity: editPackageDraft.pendingSelection ? undefined : Number(editPackageDraft.quantity || 1),
+      frame: editPackageDraft.frame.trim(),
+      firstPayment: Number(editPackageDraft.firstPayment || 0),
+      secondPayment: Number(editPackageDraft.secondPayment || 0),
+      remainder: editPackageDraft.fullPayment ? 0 : Number(editPackageDraft.remainder || 0),
+      paymentType: editPackageDraft.paymentType,
+      fullPayment: editPackageDraft.fullPayment,
+      pendingSelection: editPackageDraft.pendingSelection,
+    }
+    setEditPackageTarget(null)
     setBusy(true)
     try {
-      const phoneDigits = editPackageDraft.phone.replace(/\D/g, '')
-      await updatePackage(editPackageTarget.id, {
-        name: editPackageDraft.name.trim(),
-        phone: phoneDigits,
-        date: editPackageDraft.date,
-        quantity: editPackageDraft.pendingSelection ? undefined : Number(editPackageDraft.quantity || 1),
-        frame: editPackageDraft.frame.trim(),
-        firstPayment: Number(editPackageDraft.firstPayment || 0),
-        secondPayment: Number(editPackageDraft.secondPayment || 0),
-        remainder: editPackageDraft.fullPayment ? 0 : Number(editPackageDraft.remainder || 0),
-        paymentType: editPackageDraft.paymentType,
-        fullPayment: editPackageDraft.fullPayment,
-        pendingSelection: editPackageDraft.pendingSelection,
-      })
+      await updatePackage(target.id, payload)
       pushToast({
         tone: 'success',
         title: 'Package updated',
         message: `Saved changes for ${editPackageDraft.name}`,
       })
-      setEditPackageTarget(null)
     } catch (err) {
       pushToast({
         tone: 'error',
