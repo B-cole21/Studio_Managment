@@ -152,15 +152,16 @@ export const useStore = create<StoreState>()((set, get) => ({
         initials: initialsOf(user.userName),
       },
     })
+    get().loadData().catch(() => {})
     return user
   },
   logout: async () => {
+    set({ authUser: null })
     try {
       await logoutRequest()
     } catch {
       /* session already gone */
     }
-    set({ authUser: null })
   },
 
   validateSession: async () => {
@@ -199,18 +200,18 @@ export const useStore = create<StoreState>()((set, get) => ({
   loadData: async () => {
     set({ loading: true })
     try {
-      const [bookings, services, settings] = await Promise.all([
+      const [bookingsRes, servicesRes, settingsRes, packagesRes] = await Promise.allSettled([
         getBookings(),
         getServices(),
         getSettings(),
+        getPackages(),
       ])
-      set({ bookings, services, settings })
-      try {
-        const packages = await getPackages()
-        set({ packages: packages.map(toPackage) })
-      } catch {
-        /* packages not accessible for this role */
-      }
+      const updates: Partial<StoreState> = {}
+      if (bookingsRes.status === 'fulfilled') updates.bookings = bookingsRes.value
+      if (servicesRes.status === 'fulfilled') updates.services = servicesRes.value
+      if (settingsRes.status === 'fulfilled') updates.settings = settingsRes.value
+      if (packagesRes.status === 'fulfilled') updates.packages = packagesRes.value.map(toPackage)
+      set(updates)
     } finally {
       set({ loading: false })
     }

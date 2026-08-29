@@ -40,8 +40,11 @@ pool.query('CREATE INDEX IF NOT EXISTS idx_booking_date ON booking (date)').catc
 pool.query('CREATE INDEX IF NOT EXISTS idx_package_date ON package (date DESC)').catch(() => {})
 pool.query('CREATE INDEX IF NOT EXISTS idx_package_created_at ON package (created_at DESC)').catch(() => {})
 pool.query('CREATE INDEX IF NOT EXISTS idx_users_user_name ON users (user_name)').catch(() => {})
+pool.query('CREATE INDEX IF NOT EXISTS idx_users_lower_user_name ON users (LOWER(user_name))').catch(() => {})
 pool.query('CREATE INDEX IF NOT EXISTS idx_package_phone_date ON package (phone, date)').catch(() => {})
 pool.query('CREATE INDEX IF NOT EXISTS idx_package_lower_name ON package (LOWER(TRIM(name)))').catch(() => {})
+pool.query('CREATE INDEX IF NOT EXISTS idx_session_expire ON session (expire)').catch(() => {})
+
 
 // Auto-migration: hash existing plaintext passwords to bcrypt
 async function migratePasswordsToBcrypt() {

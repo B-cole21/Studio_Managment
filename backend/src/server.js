@@ -62,6 +62,7 @@ app.use(
       pool,
       tableName: 'session',
       createTableIfMissing: true,
+      pruneSessionInterval: 60 * 60,
     }),
     name: 'studio.sid',
     secret: process.env.SESSION_SECRET ?? 'studio-dev-secret',
@@ -688,7 +689,7 @@ app.post('/api/auth/login', async (req, res, next) => {
     }
     const { rows } = await pool.query(
       `SELECT id, user_name AS "userName", email, role, password
-       FROM users WHERE LOWER(user_name) = LOWER($1)`,
+       FROM users WHERE LOWER(user_name) = LOWER($1) LIMIT 1`,
       [userName.trim()],
     )
     const user = rows[0]
@@ -698,7 +699,10 @@ app.post('/api/auth/login', async (req, res, next) => {
     }
     const { password: _hidden, ...safe } = user
     req.session.user = safe
-    res.json(safe)
+    req.session.save((err) => {
+      if (err) return next(err)
+      res.json(safe)
+    })
   } catch (err) {
     next(err)
   }
@@ -746,7 +750,10 @@ app.put('/api/auth/me', async (req, res, next) => {
     )
     const safe = updatedRows[0]
     req.session.user = safe
-    res.json(safe)
+    req.session.save((err) => {
+      if (err) return next(err)
+      res.json(safe)
+    })
   } catch (err) {
     if (err.code === '23505') {
       return res.status(409).json({ error: 'Username already exists' })
@@ -756,11 +763,14 @@ app.put('/api/auth/me', async (req, res, next) => {
 })
 
 app.post('/api/auth/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) return res.status(500).json({ error: 'Failed to sign out' })
-    res.clearCookie('studio.sid')
+  res.clearCookie('studio.sid')
+  if (req.session) {
+    req.session.destroy(() => {
+      res.status(204).end()
+    })
+  } else {
     res.status(204).end()
-  })
+  }
 })
 
 const frontendDist = process.env.FRONTEND_DIST ?? fileURLToPath(new URL('../../frontend/dist', import.meta.url))
