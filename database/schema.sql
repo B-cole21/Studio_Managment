@@ -86,3 +86,8 @@ CREATE TABLE settings (
 
 CREATE INDEX idx_booking_date ON booking (date);
 CREATE INDEX idx_users_user_name ON users (user_name);
+CREATE INDEX idx_package_date ON package (date DESC);
+CREATE INDEX idx_package_created_at ON package (created_at DESC);
+CREATE INDEX idx_package_phone_date ON package (phone, date);
+CREATE INDEX idx_package_lower_name ON package (LOWER(TRIM(name)));
+

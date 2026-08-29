@@ -111,9 +111,10 @@ function statusOf(pkg: PackageRecord): { label: string; tone: BadgeTone } {
 }
 
 export function PackagePage() {
-  const state = useStore()
+  const packages = useStore((s) => s.packages)
+  const currentUser = useStore((s) => s.currentUser)
   const authUser = useStore((s) => s.authUser)
-  const role = authUser?.role ?? state.currentUser.role
+  const role = authUser?.role ?? currentUser.role
   const addPackage = useStore((s) => s.addPackage)
   const updatePackage = useStore((s) => s.updatePackage)
   const confirmFirst = useStore((s) => s.confirmFirst)
@@ -164,7 +165,7 @@ export function PackagePage() {
     const today = todayISO()
     const sameDay = (t?: string | null) => (t ? datePartOf(t) === today : false)
     const query = search.trim().toLowerCase()
-    return state.packages
+    return packages
       .filter((p) => {
         if (query && !(p.name.toLowerCase().includes(query) || (p.phone ?? '').includes(query))) return false
         if (dateFilter && p.date !== dateFilter) return false
@@ -186,7 +187,7 @@ export function PackagePage() {
         }
       })
       .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '') || a.name.localeCompare(b.name))
-  }, [state.packages, filter, dateFilter, search])
+  }, [packages, filter, dateFilter, search])
 
   const phoneDigits = draft.phone.replace(/\D/g, '')
   const phoneValid = /^09\d{8}$/.test(phoneDigits)
@@ -208,7 +209,7 @@ export function PackagePage() {
     if (!draftValid || busy) return
 
     const normalizedName = draft.name.trim().toLowerCase()
-    const existing = state.packages.find(
+    const existing = packages.find(
       (p) => p.name.trim().toLowerCase() === normalizedName && p.phone === phoneDigits && (draft.date ? p.date === draft.date : true)
     )
     if (existing) {

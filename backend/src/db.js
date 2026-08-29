@@ -40,6 +40,8 @@ pool.query('CREATE INDEX IF NOT EXISTS idx_booking_date ON booking (date)').catc
 pool.query('CREATE INDEX IF NOT EXISTS idx_package_date ON package (date DESC)').catch(() => {})
 pool.query('CREATE INDEX IF NOT EXISTS idx_package_created_at ON package (created_at DESC)').catch(() => {})
 pool.query('CREATE INDEX IF NOT EXISTS idx_users_user_name ON users (user_name)').catch(() => {})
+pool.query('CREATE INDEX IF NOT EXISTS idx_package_phone_date ON package (phone, date)').catch(() => {})
+pool.query('CREATE INDEX IF NOT EXISTS idx_package_lower_name ON package (LOWER(TRIM(name)))').catch(() => {})
 
 // Auto-migration: hash existing plaintext passwords to bcrypt
 async function migratePasswordsToBcrypt() {
@@ -59,15 +61,25 @@ async function migratePasswordsToBcrypt() {
 migratePasswordsToBcrypt()
 
 export async function nextId(table, prefix) {
-  const pattern = `${prefix}-%`
-  const { rows } = await pool.query(
-    `SELECT id FROM ${table} WHERE id LIKE $1`,
-    [pattern],
-  )
-  let max = 0
-  for (const row of rows) {
-    const suffix = row.id.slice(prefix.length + 1)
-    if (/^\d+$/.test(suffix)) max = Math.max(max, Number(suffix))
+  try {
+    const { rows } = await pool.query(
+      `SELECT COALESCE(MAX(CAST(SUBSTRING(id FROM length($1) + 2) AS INTEGER)), 0) AS max_num
+       FROM ${table}
+       WHERE id ~ ('^' || $1 || '-[0-9]+$')`,
+      [prefix],
+    )
+    const max = Number(rows[0]?.max_num || 0)
+    return `${prefix}-${String(max + 1).padStart(3, '0')}`
+  } catch {
+    const { rows } = await pool.query(
+      `SELECT id FROM ${table} WHERE id LIKE $1 ORDER BY LENGTH(id) DESC, id DESC LIMIT 50`,
+      [`${prefix}-%`],
+    )
+    let max = 0
+    for (const row of rows) {
+      const suffix = row.id.slice(prefix.length + 1)
+      if (/^\d+$/.test(suffix)) max = Math.max(max, Number(suffix))
+    }
+    return `${prefix}-${String(max + 1).padStart(3, '0')}`
   }
-  return `${prefix}-${String(max + 1).padStart(3, '0')}`
 }
