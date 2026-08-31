@@ -136,8 +136,19 @@ export function Settings() {
           {section === 'general' && (
             <div className="flex flex-col gap-5">
               <div className="rounded-xl border border-border-subtle bg-surface-2 p-5">
-                <h2 className="text-[15px] font-semibold text-text-primary">Studio information</h2>
-                <p className="mt-0.5 text-[13px] text-text-muted">Shown in the sidebar and used across the app.</p>
+                <div className="flex items-center gap-4 pb-5 border-b border-border-subtle">
+                  <img
+                    src="/logo.jpg"
+                    alt={form.studioName ?? 'Studio Logo'}
+                    className="h-16 w-16 rounded-xl object-cover border border-border-subtle shadow-md"
+                    onError={(e) => { (e.currentTarget.style.display = 'none') }}
+                  />
+                  <div>
+                    <h2 className="text-[15px] font-semibold text-text-primary">{form.studioName || 'Studio Logo'}</h2>
+                    <p className="text-xs text-text-muted">Studio Brand Identity & Logo</p>
+                  </div>
+                </div>
+
                 <div className="mt-5 flex flex-col gap-4">
                   <Input label="Studio name" value={form.studioName ?? ''} onChange={(e) => setForm({ ...form, studioName: e.target.value })} />
                   <Input label="Phone" value={form.phone ?? ''} onChange={(e) => setForm({ ...form, phone: e.target.value })} />

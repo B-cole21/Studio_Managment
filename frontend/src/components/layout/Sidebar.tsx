@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Aperture, CalendarDays, LayoutDashboard, LogOut, Package, Settings, UserCog } from 'lucide-react'
+import { CalendarDays, LayoutDashboard, LogOut, Package, Settings, UserCog } from 'lucide-react'
 import { useStore } from '../../lib/store'
 import { Avatar } from '../ui/Avatar'
 import { Tooltip } from '../ui/Tooltip'
@@ -40,9 +40,12 @@ export function Sidebar() {
       }`}
     >
       <div className={`flex h-14 items-center gap-2.5 border-b border-border-subtle px-3 ${collapsed ? 'justify-center px-2' : ''}`}>
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent">
-          <Aperture size={18} />
-        </span>
+        <img
+          src="/logo.jpg"
+          alt={settings.studioName}
+          className="h-8 w-8 shrink-0 rounded-lg object-cover border border-border-subtle shadow-sm"
+          onError={(e) => { (e.currentTarget.style.display = 'none') }}
+        />
         {!collapsed && (
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold leading-tight text-text-primary">{settings.studioName}</p>

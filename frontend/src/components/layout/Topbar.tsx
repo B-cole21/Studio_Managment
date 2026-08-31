@@ -1,4 +1,4 @@
-import { Aperture, PanelLeftClose, PanelLeft, Moon, Sun, CalendarDays, LogOut } from 'lucide-react'
+import { PanelLeftClose, PanelLeft, Moon, Sun, CalendarDays, LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../../lib/store'
 import { IconButton } from '../ui/Button'
@@ -36,9 +36,12 @@ export function Topbar() {
 
       {/* Mobile Branding Logo & Studio Name */}
       <div className="flex md:hidden items-center gap-2.5">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-soft text-accent">
-          <Aperture size={18} />
-        </span>
+        <img
+          src="/logo.jpg"
+          alt={studioName}
+          className="h-8 w-8 shrink-0 rounded-lg object-cover border border-border-subtle shadow-sm"
+          onError={(e) => { (e.currentTarget.style.display = 'none') }}
+        />
         <span className="text-sm font-semibold text-text-primary truncate max-w-[160px]">
           {studioName}
         </span>

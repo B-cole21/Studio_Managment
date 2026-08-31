@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { Aperture, ArrowRight, Camera, CalendarDays, Eye, EyeOff, Lock, Package, User } from 'lucide-react'
+import { ArrowRight, Camera, CalendarDays, Eye, EyeOff, Lock, Package, User } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -53,9 +53,12 @@ export function Login() {
         <div className="absolute inset-0 bg-gradient-to-t from-surface-2 via-surface-2/60 to-transparent" />
 
         <div className="relative z-10 flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-contrast shadow-lg shadow-accent/20">
-            <Aperture size={22} />
-          </span>
+          <img
+            src="/logo.jpg"
+            alt={studioName}
+            className="h-11 w-11 rounded-xl object-cover border border-white/10 shadow-lg shadow-black/20"
+            onError={(e) => { (e.currentTarget.style.display = 'none') }}
+          />
           <span className="text-xl font-bold tracking-tight text-text-primary">{studioName}</span>
         </div>
 
@@ -91,9 +94,12 @@ export function Login() {
       <div className="flex w-full flex-col justify-between px-6 py-12 lg:w-1/2 lg:px-16">
         <div className="my-auto mx-auto w-full max-w-sm">
           <div className="mb-8 flex flex-col items-center text-center lg:items-start lg:text-left">
-            <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-soft text-accent lg:hidden">
-              <Aperture size={26} />
-            </span>
+            <img
+              src="/logo.jpg"
+              alt={studioName}
+              className="mb-4 h-16 w-16 rounded-2xl object-cover border border-border-subtle shadow-md lg:hidden"
+              onError={(e) => { (e.currentTarget.style.display = 'none') }}
+            />
             <h2 className="text-2xl font-bold tracking-tight text-text-primary">Welcome back</h2>
             <p className="mt-1.5 text-sm text-text-muted">
               Enter your credentials to access your account
