@@ -138,6 +138,16 @@
       transform: scale(1);
     }
   }
+  @keyframes logoGlow {
+    0%, 100% {
+      transform: translateY(0px) scale(1);
+      filter: drop-shadow(0 0 0px rgba(228, 118, 42, 0));
+    }
+    50% {
+      transform: translateY(-1.5px) scale(1.02);
+      filter: drop-shadow(0 2px 8px rgba(228, 118, 42, 0.3));
+    }
+  }
   @keyframes toast-in {
     from {
       opacity: 0;
@@ -281,4 +291,8 @@
   100% {
     transform: translateX(200%);
   }
+}
+
+.animate-logo-glow {
+  animation: logoGlow 4s ease-in-out infinite;
 }

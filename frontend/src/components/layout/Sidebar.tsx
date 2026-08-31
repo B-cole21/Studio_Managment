@@ -39,25 +39,25 @@ export function Sidebar() {
         collapsed ? 'w-16' : 'w-60'
       }`}
     >
-      <div className={`flex h-16 items-center border-b border-border-subtle px-3.5 ${collapsed ? 'justify-center px-2' : 'justify-start'}`}>
+      <div className={`flex h-14 items-center border-b border-border-subtle px-3.5 ${collapsed ? 'justify-center px-2' : 'justify-start'}`}>
         {collapsed ? (
           <img
             src="/emblem.png"
             alt={settings.studioName}
-            className="h-8 w-8 shrink-0 object-contain"
+            className="h-6.5 w-6.5 shrink-0 object-contain animate-logo-glow"
             onError={(e) => { (e.currentTarget.style.display = 'none') }}
           />
         ) : (
           <img
             src="/logo.png"
             alt={settings.studioName}
-            className="h-10 w-auto max-w-[190px] object-contain transition-all"
+            className="h-7 w-auto max-w-[140px] object-contain animate-logo-glow"
             onError={(e) => { (e.currentTarget.style.display = 'none') }}
           />
         )}
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 p-2.5" aria-label="Main">
+      <nav className="flex flex-1 flex-col gap-1.5 p-2.5 pt-4" aria-label="Main">
         {nav.map((item) => {
           const content = (
             <NavLink

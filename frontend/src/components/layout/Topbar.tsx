@@ -39,7 +39,7 @@ export function Topbar() {
         <img
           src="/logo.png"
           alt={studioName}
-          className="h-8 w-auto max-w-[160px] object-contain transition-all"
+          className="h-6.5 w-auto max-w-[130px] object-contain animate-logo-glow"
           onError={(e) => { (e.currentTarget.style.display = 'none') }}
         />
       </div>
