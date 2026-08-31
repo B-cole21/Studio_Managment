@@ -39,18 +39,21 @@ export function Sidebar() {
         collapsed ? 'w-16' : 'w-60'
       }`}
     >
-      <div className={`flex h-14 items-center gap-2.5 border-b border-border-subtle px-3 ${collapsed ? 'justify-center px-2' : ''}`}>
-        <img
-          src="/emblem.png"
-          alt={settings.studioName}
-          className="h-8 w-8 shrink-0 object-contain"
-          onError={(e) => { (e.currentTarget.style.display = 'none') }}
-        />
-        {!collapsed && (
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold leading-tight text-text-primary">{settings.studioName}</p>
-            <p className="truncate text-[11px] text-text-muted">Studio management</p>
-          </div>
+      <div className={`flex h-16 items-center border-b border-border-subtle px-3.5 ${collapsed ? 'justify-center px-2' : 'justify-start'}`}>
+        {collapsed ? (
+          <img
+            src="/emblem.png"
+            alt={settings.studioName}
+            className="h-8 w-8 shrink-0 object-contain"
+            onError={(e) => { (e.currentTarget.style.display = 'none') }}
+          />
+        ) : (
+          <img
+            src="/logo.png"
+            alt={settings.studioName}
+            className="h-10 w-auto max-w-[190px] object-contain transition-all"
+            onError={(e) => { (e.currentTarget.style.display = 'none') }}
+          />
         )}
       </div>
 

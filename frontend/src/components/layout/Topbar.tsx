@@ -34,17 +34,14 @@ export function Topbar() {
         </span>
       </div>
 
-      {/* Mobile Branding Logo & Studio Name */}
-      <div className="flex md:hidden items-center gap-2.5">
+      {/* Mobile Branding Logo */}
+      <div className="flex md:hidden items-center">
         <img
-          src="/emblem.png"
+          src="/logo.png"
           alt={studioName}
-          className="h-8 w-8 shrink-0 object-contain"
+          className="h-8 w-auto max-w-[160px] object-contain transition-all"
           onError={(e) => { (e.currentTarget.style.display = 'none') }}
         />
-        <span className="text-sm font-semibold text-text-primary truncate max-w-[160px]">
-          {studioName}
-        </span>
       </div>
 
       {/* Theme & Logout Actions */}
