@@ -54,9 +54,9 @@ export function Login() {
 
         <div className="relative z-10 flex items-center gap-3">
           <img
-            src="/logo.jpg"
+            src="/logo.png"
             alt={studioName}
-            className="h-11 w-11 rounded-xl object-cover border border-white/10 shadow-lg shadow-black/20"
+            className="h-10 w-auto max-w-[160px] object-contain dark:brightness-0 dark:invert transition-all"
             onError={(e) => { (e.currentTarget.style.display = 'none') }}
           />
           <span className="text-xl font-bold tracking-tight text-text-primary">{studioName}</span>
@@ -95,9 +95,9 @@ export function Login() {
         <div className="my-auto mx-auto w-full max-w-sm">
           <div className="mb-8 flex flex-col items-center text-center lg:items-start lg:text-left">
             <img
-              src="/logo.jpg"
+              src="/logo.png"
               alt={studioName}
-              className="mb-4 h-16 w-16 rounded-2xl object-cover border border-border-subtle shadow-md lg:hidden"
+              className="mb-4 h-12 w-auto max-w-[180px] object-contain dark:brightness-0 dark:invert lg:hidden"
               onError={(e) => { (e.currentTarget.style.display = 'none') }}
             />
             <h2 className="text-2xl font-bold tracking-tight text-text-primary">Welcome back</h2>

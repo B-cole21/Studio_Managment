@@ -41,9 +41,9 @@ export function Sidebar() {
     >
       <div className={`flex h-14 items-center gap-2.5 border-b border-border-subtle px-3 ${collapsed ? 'justify-center px-2' : ''}`}>
         <img
-          src="/logo.jpg"
+          src="/logo.png"
           alt={settings.studioName}
-          className="h-8 w-8 shrink-0 rounded-lg object-cover border border-border-subtle shadow-sm"
+          className="h-8 w-auto max-w-[36px] shrink-0 object-contain dark:brightness-0 dark:invert transition-all"
           onError={(e) => { (e.currentTarget.style.display = 'none') }}
         />
         {!collapsed && (

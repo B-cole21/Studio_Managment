@@ -138,9 +138,9 @@ export function Settings() {
               <div className="rounded-xl border border-border-subtle bg-surface-2 p-5">
                 <div className="flex items-center gap-4 pb-5 border-b border-border-subtle">
                   <img
-                    src="/logo.jpg"
+                    src="/logo.png"
                     alt={form.studioName ?? 'Studio Logo'}
-                    className="h-16 w-16 rounded-xl object-cover border border-border-subtle shadow-md"
+                    className="h-14 w-auto max-w-[160px] object-contain dark:brightness-0 dark:invert transition-all"
                     onError={(e) => { (e.currentTarget.style.display = 'none') }}
                   />
                   <div>
