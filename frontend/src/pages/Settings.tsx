@@ -140,7 +140,7 @@ export function Settings() {
                   <img
                     src="/logo.png"
                     alt={form.studioName ?? 'Studio Logo'}
-                    className="h-14 w-auto max-w-[160px] object-contain dark:brightness-0 dark:invert transition-all"
+                    className="h-14 w-auto max-w-[180px] object-contain transition-all"
                     onError={(e) => { (e.currentTarget.style.display = 'none') }}
                   />
                   <div>

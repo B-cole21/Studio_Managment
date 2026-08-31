@@ -56,10 +56,9 @@ export function Login() {
           <img
             src="/logo.png"
             alt={studioName}
-            className="h-10 w-auto max-w-[160px] object-contain dark:brightness-0 dark:invert transition-all"
+            className="h-12 w-auto max-w-[200px] object-contain transition-all"
             onError={(e) => { (e.currentTarget.style.display = 'none') }}
           />
-          <span className="text-xl font-bold tracking-tight text-text-primary">{studioName}</span>
         </div>
 
         <div className="relative z-10 my-auto max-w-md space-y-6">
@@ -97,7 +96,7 @@ export function Login() {
             <img
               src="/logo.png"
               alt={studioName}
-              className="mb-4 h-12 w-auto max-w-[180px] object-contain dark:brightness-0 dark:invert lg:hidden"
+              className="mb-4 h-14 w-auto max-w-[220px] object-contain lg:hidden"
               onError={(e) => { (e.currentTarget.style.display = 'none') }}
             />
             <h2 className="text-2xl font-bold tracking-tight text-text-primary">Welcome back</h2>
