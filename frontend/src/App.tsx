@@ -42,7 +42,7 @@ function App() {
 
   if (checking) {
     return (
-      <div className="flex min-h-screen w-screen items-center justify-center bg-canvas text-text-primary">
+      <div className="flex min-h-screen w-full items-center justify-center bg-canvas text-text-primary">
         <Loader2 size={28} className="animate-spin text-accent" />
       </div>
     )

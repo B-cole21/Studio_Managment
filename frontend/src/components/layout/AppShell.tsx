@@ -17,14 +17,14 @@ export function AppShell() {
   }, [loadData])
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-canvas text-text-primary">
+    <div className="flex h-[100dvh] w-full max-w-full overflow-hidden bg-canvas text-text-primary">
       <div className="hidden md:flex h-full shrink-0">
         <Sidebar />
       </div>
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar />
-        <main className="flex-1 overflow-y-auto scrollbar-thin pb-20 md:pb-6">
-          <div className={`mx-auto w-full transition-all duration-300 px-3 py-4 sm:px-6 sm:py-6 lg:px-8 ${sidebarCollapsed ? 'max-w-none' : 'max-w-[1440px]'}`}>
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden scrollbar-thin pb-20 md:pb-6">
+          <div className={`mx-auto w-full min-w-0 max-w-full transition-all duration-300 px-3 py-4 sm:px-6 sm:py-6 lg:px-8 ${sidebarCollapsed ? 'max-w-none' : 'max-w-[1440px]'}`}>
             <Outlet />
           </div>
         </main>

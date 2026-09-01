@@ -116,7 +116,13 @@ function applyTheme(theme: Theme) {
 const seed = buildSeed()
 
 function initialTheme(): Theme {
-  return 'system'
+  try {
+    const saved = localStorage.getItem('app-theme')
+    if (saved === 'dark' || saved === 'light' || saved === 'system') {
+      return saved as Theme
+    }
+  } catch {}
+  return 'dark'
 }
 
 const initialThemeValue = initialTheme()
@@ -218,6 +224,9 @@ export const useStore = create<StoreState>()((set, get) => ({
   },
 
   setTheme: (theme) => {
+    try {
+      localStorage.setItem('app-theme', theme)
+    } catch {}
     applyTheme(theme)
     set({ theme })
   },

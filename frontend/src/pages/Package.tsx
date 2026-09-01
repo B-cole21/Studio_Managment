@@ -546,14 +546,14 @@ export function PackagePage() {
       />
 
       <section className="overflow-hidden rounded-xl border border-border-subtle bg-surface-2">
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border-subtle px-5 py-4">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-border-subtle p-4 sm:px-5 sm:py-4">
           <div>
             <h2 className="text-[15px] font-semibold text-text-primary">Package orders</h2>
             <p className="text-[13px] text-text-muted">
               {list.length === 0 ? 'No packages' : `${list.length} ${list.length === 1 ? 'package' : 'packages'}`}
             </p>
           </div>
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3 w-full lg:w-auto">
             <div className="w-full sm:w-56">
               <Input
                 label="Search"
@@ -631,46 +631,73 @@ export function PackagePage() {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-border-subtle text-[11px] uppercase tracking-wide text-text-muted">
-                  <th className="px-4 py-3 font-medium">Name</th>
-                  <th className="px-4 py-3 font-medium">Quantity</th>
-                  <th className="px-4 py-3 font-medium">Frame</th>
-                  <th className="px-4 py-3 font-medium">First payment</th>
-                  <th className="px-4 py-3 font-medium">Second payment</th>
-                  <th className="px-4 py-3 font-medium">Remainder</th>
-                  <th className="px-4 py-3 font-medium">Total</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium"><span className="sr-only">Actions</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                {list.map((pkg) => {
-                  const status = statusOf(pkg)
-                  const total = pkg.firstPayment + pkg.secondPayment + (pkg.remainder ?? 0)
-                  const isFullyPaid = (pkg.fullPayment && pkg.firstConfirmed) || (pkg.remainderConfirmed && (pkg.secondPayment <= 0 || pkg.secondPaymentConfirmed))
-                  const isFirstCash = pkg.paymentType === 'Cash'
-                  const isSecondCash = pkg.paymentType === 'Cash'
-                  const effRemainderType = pkg.remainderPaymentType || pkg.paymentType || 'Cash'
-                  const isRemainderCash = effRemainderType === 'Cash'
-                  return (
-                    <tr key={pkg.id} className="border-b border-border-subtle/60 last:border-b-0">
-                      <td className="whitespace-nowrap px-4 py-3">
-                        <p className="text-xs font-medium text-text-primary">{pkg.name}</p>
-                        <p className="text-[11px] text-text-muted">{pkg.phone ? pkg.phone : '—'}</p>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-xs tabular text-text-primary">
-                        {pkg.quantity != null ? pkg.quantity : '—'}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-xs text-text-primary">
-                        {pkg.frame ? pkg.frame : '—'}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-xs tabular text-text-primary">
-                        {fmt(pkg.firstPayment)} <span className="text-text-muted">({pkg.paymentType})</span>
+          <>
+            {/* Mobile Card List View (< md) */}
+            <div className="flex flex-col divide-y divide-border-subtle md:hidden">
+              {list.map((pkg) => {
+                const status = statusOf(pkg)
+                const total = pkg.firstPayment + pkg.secondPayment + (pkg.remainder ?? 0)
+                const isFullyPaid = (pkg.fullPayment && pkg.firstConfirmed) || (pkg.remainderConfirmed && (pkg.secondPayment <= 0 || pkg.secondPaymentConfirmed))
+                const isFirstCash = pkg.paymentType === 'Cash'
+                const isSecondCash = pkg.paymentType === 'Cash'
+                const effRemainderType = pkg.remainderPaymentType || pkg.paymentType || 'Cash'
+                const isRemainderCash = effRemainderType === 'Cash'
+
+                return (
+                  <div key={pkg.id} className="flex flex-col gap-3 p-4 transition-colors hover:bg-surface-3/50">
+                    {/* Top Row: Name, Phone & Status Badge */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate text-sm font-semibold text-text-primary">{pkg.name}</h3>
+                        <div className="flex items-center gap-2 mt-0.5 text-xs text-text-muted">
+                          {pkg.phone ? (
+                            <a href={`tel:${pkg.phone}`} className="hover:text-accent hover:underline">
+                              {pkg.phone}
+                            </a>
+                          ) : (
+                            <span>No phone</span>
+                          )}
+                          {pkg.date && (
+                            <>
+                              <span>•</span>
+                              <span>{formatDate(pkg.date, { short: true })}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <Badge tone={status.tone} className="shrink-0 text-[11px]">
+                        {status.label}
+                      </Badge>
+                    </div>
+
+                    {/* Middle Row: Quantity & Frame info */}
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-text-secondary bg-surface-1/60 rounded-lg p-2.5 border border-border-subtle/50">
+                      <div>
+                        <span className="text-text-muted">Qty:</span>{' '}
+                        <span className="font-medium text-text-primary">{pkg.quantity != null ? pkg.quantity : '—'}</span>
+                      </div>
+                      <span className="text-border-strong">•</span>
+                      <div className="truncate flex-1">
+                        <span className="text-text-muted">Frame:</span>{' '}
+                        <span className="font-medium text-text-primary">{pkg.frame ? pkg.frame : 'None'}</span>
+                      </div>
+                      <span className="text-border-strong">•</span>
+                      <div>
+                        <span className="text-text-muted">Total:</span>{' '}
+                        <span className="font-bold text-accent">{fmt(total)}</span>
+                      </div>
+                    </div>
+
+                    {/* Payment Breakdown Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                      {/* First Payment */}
+                      <div className="rounded-md border border-border-subtle bg-surface-1 p-2">
+                        <div className="flex items-center justify-between text-[11px] text-text-muted">
+                          <span>1st ({pkg.paymentType})</span>
+                          <span className="font-semibold text-text-primary">{fmt(pkg.firstPayment)}</span>
+                        </div>
                         {!isFullyPaid && (
-                          <div className="flex items-center gap-1 mt-0.5">
+                          <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                             {isFirstCash && (
                               pkg.firstCashierConfirmed
                                 ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
@@ -681,128 +708,326 @@ export function PackagePage() {
                               : <Badge tone="neutral" className="text-[9px] px-1 py-0">Owner pending</Badge>}
                           </div>
                         )}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-xs tabular text-text-secondary">
-                        {pkg.secondPayment > 0 ? (
-                          <>
-                            {fmt(pkg.secondPayment)} <span className="text-text-muted">({pkg.paymentType})</span>
-                            {!isFullyPaid && (
-                              <div className="flex items-center gap-1 mt-0.5">
-                                {isSecondCash && (
-                                  pkg.secondPaymentCashierConfirmed
-                                    ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
-                                    : <Badge tone="warning" className="text-[9px] px-1 py-0">Cashier pending</Badge>
-                                )}
-                                {pkg.secondPaymentConfirmed
-                                  ? <Badge tone="paid" className="text-[9px] px-1 py-0">Owner ✓</Badge>
-                                  : <Badge tone="neutral" className="text-[9px] px-1 py-0">Owner pending</Badge>}
-                              </div>
-                            )}
-                          </>
-                        ) : '—'}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-xs tabular text-text-secondary">
-                        {pkg.fullPayment ? '—' : (
-                          <>
-                            {fmt(pkg.remainder)} {pkg.remainderPaymentType ? <span className="text-text-muted">({pkg.remainderPaymentType})</span> : null}
-                            {!isFullyPaid && !pkg.fullPayment && (pkg.remainder ?? 0) > 0 && (
-                              <div className="flex items-center gap-1 mt-0.5">
-                                {pkg.remainderReceived ? (
-                                  isRemainderCash ? (
-                                    pkg.remainderCashierConfirmed
-                                      ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
-                                      : <Badge tone="warning" className="text-[9px] px-1 py-0">Cashier pending</Badge>
-                                  ) : null
-                                ) : (
-                                  <Badge tone="neutral" className="text-[9px] px-1 py-0">Not received</Badge>
-                                )}
-                                {pkg.remainderConfirmed
-                                  ? <Badge tone="paid" className="text-[9px] px-1 py-0">Owner ✓</Badge>
-                                  : <Badge tone="neutral" className="text-[9px] px-1 py-0">Owner pending</Badge>}
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-xs tabular text-text-primary">
-                        {fmt(total)}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3">
-                        <Badge tone={status.tone}>{status.label}</Badge>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1">
-                          {canAddPackage && pkg.pendingSelection && (
-                            <IconButton
-                              label={`Complete package for ${pkg.name}`}
-                              icon={<FileCheck size={15} className="text-success" />}
-                              onClick={() => openComplete(pkg)}
-                            />
-                          )}
-                          {isCashier && isFirstCash && !pkg.firstCashierConfirmed && !pkg.firstConfirmed && (
-                            <IconButton
-                              label={`Confirm received first payment from cameraman for ${pkg.name}`}
-                              icon={<CheckCheck size={15} className="text-info" />}
-                              onClick={() => setCashierConfirmFirstTarget(pkg)}
-                            />
-                          )}
-                          {isOwner && (isFirstCash ? pkg.firstCashierConfirmed : true) && !pkg.firstConfirmed && (
-                            <IconButton
-                              label={`Confirm first payment of ${pkg.name}`}
-                              icon={<CheckCheck size={15} className="text-info" />}
-                              onClick={() => setConfirmFirstTarget(pkg)}
-                            />
-                          )}
-                          {isCashier && !pkg.fullPayment && pkg.remainderReceived && isRemainderCash && !pkg.remainderCashierConfirmed && !pkg.remainderConfirmed && (
-                            <IconButton
-                              label={`Confirm received remainder from cameraman for ${pkg.name}`}
-                              icon={<CheckCheck size={15} className="text-info" />}
-                              onClick={() => setCashierConfirmRemainderTarget(pkg)}
-                            />
-                          )}
-                          {isOwner && !pkg.fullPayment && pkg.remainderReceived && (isRemainderCash ? pkg.remainderCashierConfirmed : true) && !pkg.remainderConfirmed && (
-                            <IconButton
-                              label={`Confirm remainder payment of ${pkg.name}`}
-                              icon={<Wallet size={15} className="text-warning" />}
-                              onClick={() => setConfirmRemainderTarget(pkg)}
-                            />
-                          )}
-                          {isCashier && pkg.secondPayment > 0 && isSecondCash && !pkg.secondPaymentCashierConfirmed && !pkg.secondPaymentConfirmed && (
-                            <IconButton
-                              label={`Confirm received second payment from cameraman for ${pkg.name}`}
-                              icon={<CheckCheck size={15} className="text-info" />}
-                              onClick={() => setCashierConfirmSecondTarget(pkg)}
-                            />
-                          )}
-                          {isOwner && pkg.secondPayment > 0 && (isSecondCash ? pkg.secondPaymentCashierConfirmed : true) && !pkg.secondPaymentConfirmed && (
-                            <IconButton
-                              label={`Confirm second payment of ${pkg.name}`}
-                              icon={<Wallet size={15} className="text-warning" />}
-                              onClick={() => setConfirmSecondTarget(pkg)}
-                            />
-                          )}
-                          {canRecordRemainder && !pkg.fullPayment && (pkg.remainder ?? 0) > 0 && !pkg.remainderConfirmed && !pkg.remainderReceived && (
-                            <IconButton
-                              label={`Record remainder payment for ${pkg.name}`}
-                              icon={<Wallet size={15} className="text-warning" />}
-                              onClick={() => openRemainder(pkg)}
-                            />
-                          )}
-                          {canEditPackage && (
-                            <IconButton
-                              label={`Edit package details for ${pkg.name}`}
-                              icon={<SquarePen size={15} className="text-accent" />}
-                              onClick={() => openEditPackage(pkg)}
-                            />
+                      </div>
+
+                      {/* Second Payment if exists */}
+                      {pkg.secondPayment > 0 && (
+                        <div className="rounded-md border border-border-subtle bg-surface-1 p-2">
+                          <div className="flex items-center justify-between text-[11px] text-text-muted">
+                            <span>2nd ({pkg.paymentType})</span>
+                            <span className="font-semibold text-text-primary">{fmt(pkg.secondPayment)}</span>
+                          </div>
+                          {!isFullyPaid && (
+                            <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                              {isSecondCash && (
+                                pkg.secondPaymentCashierConfirmed
+                                  ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
+                                  : <Badge tone="warning" className="text-[9px] px-1 py-0">Cashier pending</Badge>
+                              )}
+                              {pkg.secondPaymentConfirmed
+                                ? <Badge tone="paid" className="text-[9px] px-1 py-0">Owner ✓</Badge>
+                                : <Badge tone="neutral" className="text-[9px] px-1 py-0">Owner pending</Badge>}
+                            </div>
                           )}
                         </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                      )}
+
+                      {/* Remainder */}
+                      {!pkg.fullPayment && (
+                        <div className="rounded-md border border-border-subtle bg-surface-1 p-2">
+                          <div className="flex items-center justify-between text-[11px] text-text-muted">
+                            <span>Remainder {pkg.remainderPaymentType ? `(${pkg.remainderPaymentType})` : ''}</span>
+                            <span className="font-semibold text-text-primary">{fmt(pkg.remainder)}</span>
+                          </div>
+                          {!isFullyPaid && (pkg.remainder ?? 0) > 0 && (
+                            <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                              {pkg.remainderReceived ? (
+                                isRemainderCash ? (
+                                  pkg.remainderCashierConfirmed
+                                    ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
+                                    : <Badge tone="warning" className="text-[9px] px-1 py-0">Cashier pending</Badge>
+                                ) : null
+                              ) : (
+                                <Badge tone="neutral" className="text-[9px] px-1 py-0">Not received</Badge>
+                              )}
+                              {pkg.remainderConfirmed
+                                ? <Badge tone="paid" className="text-[9px] px-1 py-0">Owner ✓</Badge>
+                                : <Badge tone="neutral" className="text-[9px] px-1 py-0">Owner pending</Badge>}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Mobile Action Buttons Bar */}
+                    <div className="flex flex-wrap items-center justify-end gap-1.5 pt-1 border-t border-border-subtle/50">
+                      {canAddPackage && pkg.pendingSelection && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon={<FileCheck size={14} className="text-success" />}
+                          onClick={() => openComplete(pkg)}
+                        >
+                          Complete package
+                        </Button>
+                      )}
+                      {isCashier && isFirstCash && !pkg.firstCashierConfirmed && !pkg.firstConfirmed && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon={<CheckCheck size={14} className="text-info" />}
+                          onClick={() => setCashierConfirmFirstTarget(pkg)}
+                        >
+                          Cashier 1st ✓
+                        </Button>
+                      )}
+                      {isOwner && (isFirstCash ? pkg.firstCashierConfirmed : true) && !pkg.firstConfirmed && (
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          icon={<CheckCheck size={14} />}
+                          onClick={() => setConfirmFirstTarget(pkg)}
+                        >
+                          Confirm 1st
+                        </Button>
+                      )}
+                      {isCashier && !pkg.fullPayment && pkg.remainderReceived && isRemainderCash && !pkg.remainderCashierConfirmed && !pkg.remainderConfirmed && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon={<CheckCheck size={14} className="text-info" />}
+                          onClick={() => setCashierConfirmRemainderTarget(pkg)}
+                        >
+                          Cashier Remainder ✓
+                        </Button>
+                      )}
+                      {isOwner && !pkg.fullPayment && pkg.remainderReceived && (isRemainderCash ? pkg.remainderCashierConfirmed : true) && !pkg.remainderConfirmed && (
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          icon={<Wallet size={14} />}
+                          onClick={() => setConfirmRemainderTarget(pkg)}
+                        >
+                          Confirm Remainder
+                        </Button>
+                      )}
+                      {isCashier && pkg.secondPayment > 0 && isSecondCash && !pkg.secondPaymentCashierConfirmed && !pkg.secondPaymentConfirmed && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon={<CheckCheck size={14} className="text-info" />}
+                          onClick={() => setCashierConfirmSecondTarget(pkg)}
+                        >
+                          Cashier 2nd ✓
+                        </Button>
+                      )}
+                      {isOwner && pkg.secondPayment > 0 && (isSecondCash ? pkg.secondPaymentCashierConfirmed : true) && !pkg.secondPaymentConfirmed && (
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          icon={<Wallet size={14} />}
+                          onClick={() => setConfirmSecondTarget(pkg)}
+                        >
+                          Confirm 2nd
+                        </Button>
+                      )}
+                      {canRecordRemainder && !pkg.fullPayment && (pkg.remainder ?? 0) > 0 && !pkg.remainderConfirmed && !pkg.remainderReceived && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon={<Wallet size={14} className="text-warning" />}
+                          onClick={() => openRemainder(pkg)}
+                        >
+                          Record remainder
+                        </Button>
+                      )}
+                      {canEditPackage && (
+                        <IconButton
+                          label={`Edit package details for ${pkg.name}`}
+                          icon={<SquarePen size={15} className="text-accent" />}
+                          onClick={() => openEditPackage(pkg)}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Desktop Table View (>= md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs min-w-[750px]">
+                <thead>
+                  <tr className="border-b border-border-subtle text-[11px] uppercase tracking-wide text-text-muted">
+                    <th className="px-4 py-3 font-medium">Name</th>
+                    <th className="px-4 py-3 font-medium">Quantity</th>
+                    <th className="px-4 py-3 font-medium">Frame</th>
+                    <th className="px-4 py-3 font-medium">First payment</th>
+                    <th className="px-4 py-3 font-medium">Second payment</th>
+                    <th className="px-4 py-3 font-medium">Remainder</th>
+                    <th className="px-4 py-3 font-medium">Total</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium"><span className="sr-only">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {list.map((pkg) => {
+                    const status = statusOf(pkg)
+                    const total = pkg.firstPayment + pkg.secondPayment + (pkg.remainder ?? 0)
+                    const isFullyPaid = (pkg.fullPayment && pkg.firstConfirmed) || (pkg.remainderConfirmed && (pkg.secondPayment <= 0 || pkg.secondPaymentConfirmed))
+                    const isFirstCash = pkg.paymentType === 'Cash'
+                    const isSecondCash = pkg.paymentType === 'Cash'
+                    const effRemainderType = pkg.remainderPaymentType || pkg.paymentType || 'Cash'
+                    const isRemainderCash = effRemainderType === 'Cash'
+                    return (
+                      <tr key={pkg.id} className="border-b border-border-subtle/60 last:border-b-0">
+                        <td className="whitespace-nowrap px-4 py-3">
+                          <p className="text-xs font-medium text-text-primary">{pkg.name}</p>
+                          <p className="text-[11px] text-text-muted">{pkg.phone ? pkg.phone : '—'}</p>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-xs tabular text-text-primary">
+                          {pkg.quantity != null ? pkg.quantity : '—'}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-xs text-text-primary">
+                          {pkg.frame ? pkg.frame : '—'}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-xs tabular text-text-primary">
+                          {fmt(pkg.firstPayment)} <span className="text-text-muted">({pkg.paymentType})</span>
+                          {!isFullyPaid && (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              {isFirstCash && (
+                                pkg.firstCashierConfirmed
+                                  ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
+                                  : <Badge tone="warning" className="text-[9px] px-1 py-0">Cashier pending</Badge>
+                              )}
+                              {pkg.firstConfirmed
+                                ? <Badge tone="paid" className="text-[9px] px-1 py-0">Owner ✓</Badge>
+                                : <Badge tone="neutral" className="text-[9px] px-1 py-0">Owner pending</Badge>}
+                            </div>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-xs tabular text-text-secondary">
+                          {pkg.secondPayment > 0 ? (
+                            <>
+                              {fmt(pkg.secondPayment)} <span className="text-text-muted">({pkg.paymentType})</span>
+                              {!isFullyPaid && (
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  {isSecondCash && (
+                                    pkg.secondPaymentCashierConfirmed
+                                      ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
+                                      : <Badge tone="warning" className="text-[9px] px-1 py-0">Cashier pending</Badge>
+                                  )}
+                                  {pkg.secondPaymentConfirmed
+                                    ? <Badge tone="paid" className="text-[9px] px-1 py-0">Owner ✓</Badge>
+                                    : <Badge tone="neutral" className="text-[9px] px-1 py-0">Owner pending</Badge>}
+                                </div>
+                              )}
+                            </>
+                          ) : '—'}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-xs tabular text-text-secondary">
+                          {pkg.fullPayment ? '—' : (
+                            <>
+                              {fmt(pkg.remainder)} {pkg.remainderPaymentType ? <span className="text-text-muted">({pkg.remainderPaymentType})</span> : null}
+                              {!isFullyPaid && !pkg.fullPayment && (pkg.remainder ?? 0) > 0 && (
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  {pkg.remainderReceived ? (
+                                    isRemainderCash ? (
+                                      pkg.remainderCashierConfirmed
+                                        ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
+                                        : <Badge tone="warning" className="text-[9px] px-1 py-0">Cashier pending</Badge>
+                                    ) : null
+                                  ) : (
+                                    <Badge tone="neutral" className="text-[9px] px-1 py-0">Not received</Badge>
+                                  )}
+                                  {pkg.remainderConfirmed
+                                    ? <Badge tone="paid" className="text-[9px] px-1 py-0">Owner ✓</Badge>
+                                    : <Badge tone="neutral" className="text-[9px] px-1 py-0">Owner pending</Badge>}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-xs tabular text-text-primary">
+                          {fmt(total)}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3">
+                          <Badge tone={status.tone}>{status.label}</Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-1">
+                            {canAddPackage && pkg.pendingSelection && (
+                              <IconButton
+                                label={`Complete package for ${pkg.name}`}
+                                icon={<FileCheck size={15} className="text-success" />}
+                                onClick={() => openComplete(pkg)}
+                              />
+                            )}
+                            {isCashier && isFirstCash && !pkg.firstCashierConfirmed && !pkg.firstConfirmed && (
+                              <IconButton
+                                label={`Confirm received first payment from cameraman for ${pkg.name}`}
+                                icon={<CheckCheck size={15} className="text-info" />}
+                                onClick={() => setCashierConfirmFirstTarget(pkg)}
+                              />
+                            )}
+                            {isOwner && (isFirstCash ? pkg.firstCashierConfirmed : true) && !pkg.firstConfirmed && (
+                              <IconButton
+                                label={`Confirm first payment of ${pkg.name}`}
+                                icon={<CheckCheck size={15} className="text-info" />}
+                                onClick={() => setConfirmFirstTarget(pkg)}
+                              />
+                            )}
+                            {isCashier && !pkg.fullPayment && pkg.remainderReceived && isRemainderCash && !pkg.remainderCashierConfirmed && !pkg.remainderConfirmed && (
+                              <IconButton
+                                label={`Confirm received remainder from cameraman for ${pkg.name}`}
+                                icon={<CheckCheck size={15} className="text-info" />}
+                                onClick={() => setCashierConfirmRemainderTarget(pkg)}
+                              />
+                            )}
+                            {isOwner && !pkg.fullPayment && pkg.remainderReceived && (isRemainderCash ? pkg.remainderCashierConfirmed : true) && !pkg.remainderConfirmed && (
+                              <IconButton
+                                label={`Confirm remainder payment of ${pkg.name}`}
+                                icon={<Wallet size={15} className="text-warning" />}
+                                onClick={() => setConfirmRemainderTarget(pkg)}
+                              />
+                            )}
+                            {isCashier && pkg.secondPayment > 0 && isSecondCash && !pkg.secondPaymentCashierConfirmed && !pkg.secondPaymentConfirmed && (
+                              <IconButton
+                                label={`Confirm received second payment from cameraman for ${pkg.name}`}
+                                icon={<CheckCheck size={15} className="text-info" />}
+                                onClick={() => setCashierConfirmSecondTarget(pkg)}
+                              />
+                            )}
+                            {isOwner && pkg.secondPayment > 0 && (isSecondCash ? pkg.secondPaymentCashierConfirmed : true) && !pkg.secondPaymentConfirmed && (
+                              <IconButton
+                                label={`Confirm second payment of ${pkg.name}`}
+                                icon={<Wallet size={15} className="text-warning" />}
+                                onClick={() => setConfirmSecondTarget(pkg)}
+                              />
+                            )}
+                            {canRecordRemainder && !pkg.fullPayment && (pkg.remainder ?? 0) > 0 && !pkg.remainderConfirmed && !pkg.remainderReceived && (
+                              <IconButton
+                                label={`Record remainder payment for ${pkg.name}`}
+                                icon={<Wallet size={15} className="text-warning" />}
+                                onClick={() => openRemainder(pkg)}
+                              />
+                            )}
+                            {canEditPackage && (
+                              <IconButton
+                                label={`Edit package details for ${pkg.name}`}
+                                icon={<SquarePen size={15} className="text-accent" />}
+                                onClick={() => openEditPackage(pkg)}
+                              />
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
 
