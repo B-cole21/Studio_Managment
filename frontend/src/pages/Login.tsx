@@ -52,14 +52,7 @@ export function Login() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-surface-2 via-surface-2/60 to-transparent" />
 
-        <div className="relative z-10 flex items-center gap-3">
-          <img
-            src="/logo.png"
-            alt={studioName}
-            className="h-12 w-auto max-w-[200px] object-contain transition-all"
-            onError={(e) => { (e.currentTarget.style.display = 'none') }}
-          />
-        </div>
+        <div />
 
         <div className="relative z-10 my-auto max-w-md space-y-6">
           <h1 className="text-4xl font-extrabold tracking-tight text-text-primary">
@@ -92,11 +85,11 @@ export function Login() {
       {/* Right sign-in form */}
       <div className="flex w-full flex-col justify-between px-6 py-12 lg:w-1/2 lg:px-16">
         <div className="my-auto mx-auto w-full max-w-sm">
-          <div className="mb-8 flex flex-col items-center text-center lg:items-start lg:text-left">
+          <div className="mb-8 flex flex-col items-center text-center">
             <img
               src="/logo.png"
               alt={studioName}
-              className="mb-4 h-14 w-auto max-w-[220px] object-contain lg:hidden"
+              className="mb-8 h-16 w-auto max-w-[220px] object-contain -translate-y-3"
               onError={(e) => { (e.currentTarget.style.display = 'none') }}
             />
             <h2 className="text-2xl font-bold tracking-tight text-text-primary">Welcome back</h2>
