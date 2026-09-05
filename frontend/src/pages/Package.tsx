@@ -773,59 +773,63 @@ export function PackagePage() {
                         )}
                       </div>
 
-                      {/* Second Payment if exists */}
-                      {pkg.secondPayment > 0 && (
-                        <div className="rounded-md border border-border-subtle bg-surface-1 p-2">
-                          <div className="flex items-center justify-between text-[11px] text-text-muted">
-                            <div className="flex items-center gap-1.5">
-                              <span>2nd</span>
+                      {/* Second Payment */}
+                      <div className="rounded-md border border-border-subtle bg-surface-1 p-2">
+                        <div className="flex items-center justify-between text-[11px] text-text-muted">
+                          <div className="flex items-center gap-1.5">
+                            <span>2nd</span>
+                            {pkg.secondPayment > 0 && (
                               <PaymentMethodBadge method={pkg.secondPaymentType || pkg.paymentType} />
-                            </div>
-                            <span className="font-semibold text-text-primary">{fmt(pkg.secondPayment)}</span>
+                            )}
                           </div>
-                          {!isFullyPaid && (
-                            <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                              {isSecondCash && (
-                                pkg.secondPaymentCashierConfirmed
-                                  ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
-                                  : <Badge tone="warning" className="text-[9px] px-1 py-0">Cashier pending</Badge>
-                              )}
-                              {pkg.secondPaymentConfirmed
-                                ? <Badge tone="paid" className="text-[9px] px-1 py-0">Owner ✓</Badge>
-                                : <Badge tone="neutral" className="text-[9px] px-1 py-0">Owner pending</Badge>}
-                            </div>
-                          )}
+                          <span className={`font-semibold ${pkg.secondPayment > 0 ? 'text-text-primary' : 'text-text-muted'}`}>
+                            {pkg.secondPayment > 0 ? fmt(pkg.secondPayment) : '/'}
+                          </span>
                         </div>
-                      )}
+                        {pkg.secondPayment > 0 && !isFullyPaid && (
+                          <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                            {isSecondCash && (
+                              pkg.secondPaymentCashierConfirmed
+                                ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
+                                : <Badge tone="warning" className="text-[9px] px-1 py-0">Cashier pending</Badge>
+                            )}
+                            {pkg.secondPaymentConfirmed
+                              ? <Badge tone="paid" className="text-[9px] px-1 py-0">Owner ✓</Badge>
+                              : <Badge tone="neutral" className="text-[9px] px-1 py-0">Owner pending</Badge>}
+                          </div>
+                        )}
+                      </div>
 
                       {/* Remainder */}
-                      {!pkg.fullPayment && (
-                        <div className="rounded-md border border-border-subtle bg-surface-1 p-2">
-                          <div className="flex items-center justify-between text-[11px] text-text-muted">
-                            <div className="flex items-center gap-1.5">
-                              <span>Remainder</span>
+                      <div className="rounded-md border border-border-subtle bg-surface-1 p-2">
+                        <div className="flex items-center justify-between text-[11px] text-text-muted">
+                          <div className="flex items-center gap-1.5">
+                            <span>Remainder</span>
+                            {!pkg.fullPayment && (pkg.remainder ?? 0) > 0 && (
                               <PaymentMethodBadge method={pkg.remainderPaymentType || pkg.paymentType} />
-                            </div>
-                            <span className="font-semibold text-text-primary">{fmt(pkg.remainder)}</span>
+                            )}
                           </div>
-                          {!isFullyPaid && (pkg.remainder ?? 0) > 0 && (
-                            <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                              {pkg.remainderReceived ? (
-                                isRemainderCash ? (
-                                  pkg.remainderCashierConfirmed
-                                    ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
-                                    : <Badge tone="warning" className="text-[9px] px-1 py-0">Cashier pending</Badge>
-                                ) : null
-                              ) : (
-                                <Badge tone="neutral" className="text-[9px] px-1 py-0">Not received</Badge>
-                              )}
-                              {pkg.remainderConfirmed
-                                ? <Badge tone="paid" className="text-[9px] px-1 py-0">Owner ✓</Badge>
-                                : <Badge tone="neutral" className="text-[9px] px-1 py-0">Owner pending</Badge>}
-                            </div>
-                          )}
+                          <span className={`font-semibold ${!pkg.fullPayment && (pkg.remainder ?? 0) > 0 ? 'text-text-primary' : 'text-text-muted'}`}>
+                            {!pkg.fullPayment && (pkg.remainder ?? 0) > 0 ? fmt(pkg.remainder) : '/'}
+                          </span>
                         </div>
-                      )}
+                        {!pkg.fullPayment && !isFullyPaid && (pkg.remainder ?? 0) > 0 && (
+                          <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                            {pkg.remainderReceived ? (
+                              isRemainderCash ? (
+                                pkg.remainderCashierConfirmed
+                                  ? <Badge tone="paid" className="text-[9px] px-1 py-0">Cashier ✓</Badge>
+                                  : <Badge tone="warning" className="text-[9px] px-1 py-0">Cashier pending</Badge>
+                              ) : null
+                            ) : (
+                              <Badge tone="neutral" className="text-[9px] px-1 py-0">Not received</Badge>
+                            )}
+                            {pkg.remainderConfirmed
+                              ? <Badge tone="paid" className="text-[9px] px-1 py-0">Owner ✓</Badge>
+                              : <Badge tone="neutral" className="text-[9px] px-1 py-0">Owner pending</Badge>}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Mobile Action Buttons Bar */}
@@ -998,16 +1002,18 @@ export function PackagePage() {
                                 </div>
                               )}
                             </>
-                          ) : '—'}
+                          ) : (
+                            <span className="text-text-muted font-medium">/</span>
+                          )}
                         </td>
                         <td className="whitespace-nowrap px-4 py-3 text-xs tabular text-text-secondary">
-                          {pkg.fullPayment ? '—' : (
+                          {!pkg.fullPayment && (pkg.remainder ?? 0) > 0 ? (
                             <>
                               <div className="flex items-center gap-1.5">
                                 <span>{fmt(pkg.remainder)}</span>
                                 <PaymentMethodBadge method={pkg.remainderPaymentType || pkg.paymentType} />
                               </div>
-                              {!isFullyPaid && !pkg.fullPayment && (pkg.remainder ?? 0) > 0 && (
+                              {!isFullyPaid && (
                                 <div className="flex items-center gap-1 mt-1">
                                   {pkg.remainderReceived ? (
                                     isRemainderCash ? (
@@ -1024,6 +1030,8 @@ export function PackagePage() {
                                 </div>
                               )}
                             </>
+                          ) : (
+                            <span className="text-text-muted font-medium">/</span>
                           )}
                         </td>
                         <td className="whitespace-nowrap px-4 py-3 text-xs tabular text-text-primary">
