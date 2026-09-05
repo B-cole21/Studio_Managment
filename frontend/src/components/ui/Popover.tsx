@@ -49,12 +49,21 @@ export function Popover({ trigger, children, align = 'start', className = '', on
     const update = (clamp: boolean) => {
       const rect = wrapperRef.current?.getBoundingClientRect()
       if (!rect) return
-      const width = clamp ? (panelRef.current?.offsetWidth ?? 0) : 0
+      const width = clamp ? (panelRef.current?.offsetWidth ?? 310) : 310
+      const height = clamp ? (panelRef.current?.offsetHeight ?? 340) : 340
       let left = align === 'end' ? rect.right - width : rect.left
-      if (clamp && width > 0) {
-        left = Math.max(GAP, Math.min(left, window.innerWidth - width - GAP))
+      left = Math.max(GAP, Math.min(left, window.innerWidth - width - GAP))
+
+      let top = rect.bottom + GAP
+      if (top + height > window.innerHeight - GAP) {
+        if (rect.top - height - GAP >= GAP) {
+          top = rect.top - height - GAP
+        } else {
+          top = Math.max(GAP, window.innerHeight - height - GAP)
+        }
       }
-      setPos({ top: rect.bottom + GAP, left })
+      top = Math.max(GAP, Math.min(top, window.innerHeight - height - GAP))
+      setPos({ top, left })
     }
     const reflow = () => update(true)
     update(false)
@@ -75,7 +84,7 @@ export function Popover({ trigger, children, align = 'start', className = '', on
         createPortal(
           <div
             ref={panelRef}
-            style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 50 }}
+            style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 100 }}
             className="min-w-44 animate-scale-in rounded-lg border border-border-strong bg-surface-overlay p-1 shadow-2"
           >
             {children(() => setOpen(false))}

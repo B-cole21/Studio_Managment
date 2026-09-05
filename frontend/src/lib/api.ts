@@ -1,3 +1,5 @@
+import type { PaymentMethod } from './types'
+
 export interface AuthUser {
   id: number
   userName: string
@@ -155,9 +157,10 @@ export interface PackageRecord {
   frame: string
   firstPayment: number
   secondPayment: number
+  secondPaymentType?: PaymentMethod | null
   remainder: number | null
   date: string
-  paymentType: 'Cash' | 'Bank'
+  paymentType: PaymentMethod
   fullPayment: boolean
   firstConfirmed: boolean
   firstConfirmedBy?: number | null
@@ -167,7 +170,7 @@ export interface PackageRecord {
   firstCashierConfirmedAt?: string | null
   remainderReceived: boolean
   remainderReceivedAt?: string | null
-  remainderPaymentType: 'Cash' | 'Bank' | null
+  remainderPaymentType: PaymentMethod | null
   remainderConfirmed: boolean
   remainderConfirmedBy?: number | null
   remainderConfirmedAt?: string | null
@@ -192,9 +195,11 @@ export interface PackageInput {
   frame?: string
   firstPayment?: number
   secondPayment?: number
+  secondPaymentType?: PaymentMethod | null
   remainder?: number | null
+  remainderPaymentType?: PaymentMethod | null
   date?: string
-  paymentType?: 'Cash' | 'Bank'
+  paymentType?: PaymentMethod
   fullPayment?: boolean
   pendingSelection?: boolean
 }
@@ -217,7 +222,8 @@ export function updatePackageApi(
     phone?: string
     remainderReceived?: boolean
     pendingSelection?: boolean
-    remainderPaymentType?: 'Cash' | 'Bank' | null
+    secondPaymentType?: PaymentMethod | null
+    remainderPaymentType?: PaymentMethod | null
   },
 ): Promise<PackageRecord> {
   return api<PackageRecord>(`/package/${id}`, {

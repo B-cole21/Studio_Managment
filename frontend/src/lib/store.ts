@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type {
-  Booking, ID, Package, Service, StudioSettings, Theme,
+  Booking, ID, Package, PaymentMethod, Service, StudioSettings, Theme,
 } from './types'
 import { buildSeed } from './mock'
 import { addMinutes, minutesOf } from './format'
@@ -32,9 +32,11 @@ export interface PackageInput {
   frame?: string
   firstPayment?: number
   secondPayment?: number
+  secondPaymentType?: PaymentMethod | null
   remainder?: number
+  remainderPaymentType?: PaymentMethod | null
   date?: string
-  paymentType?: 'Cash' | 'Bank'
+  paymentType?: PaymentMethod
   fullPayment?: boolean
   pendingSelection?: boolean
 }
@@ -44,6 +46,7 @@ function toPackage(r: PackageRecord): Package {
     ...r,
     firstPayment: Number(r.firstPayment),
     secondPayment: Number(r.secondPayment ?? 0),
+    secondPaymentType: r.secondPaymentType ?? 'Cash',
     remainder: r.remainder != null ? Number(r.remainder) : null,
     pendingSelection: r.pendingSelection ?? false,
     firstCashierConfirmed: r.firstCashierConfirmed ?? false,
@@ -89,7 +92,8 @@ interface StoreState {
       phone?: string
       remainderReceived?: boolean
       pendingSelection?: boolean
-      remainderPaymentType?: 'Cash' | 'Bank' | null
+      secondPaymentType?: PaymentMethod | null
+      remainderPaymentType?: PaymentMethod | null
     },
   ) => Promise<void>
   confirmFirst: (id: ID) => Promise<void>

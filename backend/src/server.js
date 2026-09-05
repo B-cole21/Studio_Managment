@@ -234,6 +234,7 @@ const packageSelect = `
          second_payment_cashier_confirmed_at AS "secondPaymentCashierConfirmedAt",
          created_by AS "createdBy", created_by_name AS "createdByName",
          pending_selection AS "pendingSelection",
+         second_payment_type AS "secondPaymentType",
          remainder_payment_type AS "remainderPaymentType"
   FROM package`
 
@@ -263,6 +264,7 @@ const packageReturning = `
             second_payment_cashier_confirmed_at AS "secondPaymentCashierConfirmedAt",
             created_by AS "createdBy", created_by_name AS "createdByName",
             pending_selection AS "pendingSelection",
+            second_payment_type AS "secondPaymentType",
             remainder_payment_type AS "remainderPaymentType"`
 
 function requireRole(roles) {
@@ -286,7 +288,7 @@ app.get('/api/package', requireRole(['cashier', 'owner', 'cameraman']), async (_
 app.post('/api/package', requireRole(['cashier', 'cameraman', 'owner']), async (req, res, next) => {
   try {
     const me = req.session.user
-    const { name, phone, quantity, frame, firstPayment, secondPayment, remainder, date, fullPayment, paymentType, pendingSelection, remainderPaymentType } = req.body
+    const { name, phone, quantity, frame, firstPayment, secondPayment, remainder, date, fullPayment, paymentType, pendingSelection, remainderPaymentType, secondPaymentType } = req.body
     if (!name || !phone) {
       return res.status(400).json({ error: 'name and phone are required' })
     }
@@ -309,19 +311,20 @@ app.post('/api/package', requireRole(['cashier', 'cameraman', 'owner']), async (
     const second = Number(secondPayment ?? 0)
     const rest = isPending ? 0 : (fullPayment ? 0 : Number(remainder ?? 0))
     const full = Boolean(fullPayment)
-    const type = ['Cash', 'Bank'].includes(paymentType) ? paymentType : 'Cash'
-    const rType = ['Cash', 'Bank'].includes(remainderPaymentType) ? remainderPaymentType : null
+    const type = ['Cash', 'Bank', 'Telebirr'].includes(paymentType) ? paymentType : 'Cash'
+    const secType = ['Cash', 'Bank', 'Telebirr'].includes(secondPaymentType) ? secondPaymentType : 'Cash'
+    const rType = ['Cash', 'Bank', 'Telebirr'].includes(remainderPaymentType) ? remainderPaymentType : null
     if (first < 0 || second < 0 || (rest != null && rest < 0)) return res.status(400).json({ error: 'Payments cannot be negative' })
     const id = await nextId('package', 'pkg')
     const { rows } = await pool.query(
       `INSERT INTO package (id, name, phone, quantity, frame, first_payment, second_payment, remainder, date, payment_type, full_payment,
                             created_by, created_by_name, pending_selection,
                             first_cashier_confirmed, first_cashier_confirmed_by, first_cashier_confirmed_at,
-                            remainder_payment_type)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+                            second_payment_type, remainder_payment_type)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
        ${packageReturning}`,
       [id, name, phone, qty, frame ?? null, first, second, rest, date ?? null, type, full, me.id, me.userName, isPending,
-       isCashier, isCashier ? me.id : null, isCashier ? new Date() : null, rType],
+       isCashier, isCashier ? me.id : null, isCashier ? new Date() : null, secType, rType],
     )
     res.status(201).json(rows[0])
   } catch (err) {
@@ -332,7 +335,7 @@ app.post('/api/package', requireRole(['cashier', 'cameraman', 'owner']), async (
 app.put('/api/package/:id', requireRole(['cashier', 'owner', 'cameraman']), async (req, res, next) => {
   try {
     const me = req.session.user
-    const { name, phone, firstPayment, secondPayment, remainder, remainderReceived, quantity, frame, date, paymentType, fullPayment, pendingSelection, remainderPaymentType } = req.body
+    const { name, phone, firstPayment, secondPayment, remainder, remainderReceived, quantity, frame, date, paymentType, fullPayment, pendingSelection, secondPaymentType, remainderPaymentType } = req.body
     const { rows } = await pool.query(`${packageSelect} WHERE id = $1`, [req.params.id])
     const pkg = rows[0]
     if (!pkg) return res.status(404).json({ error: 'Package not found' })
@@ -386,7 +389,7 @@ app.put('/api/package/:id', requireRole(['cashier', 'owner', 'cameraman']), asyn
     }
 
     if (paymentType !== undefined && paymentType != null) {
-      updateFields.payment_type = ['Cash', 'Bank'].includes(paymentType) ? paymentType : 'Cash'
+      updateFields.payment_type = ['Cash', 'Bank', 'Telebirr'].includes(paymentType) ? paymentType : 'Cash'
     }
 
     if (fullPayment !== undefined) {
@@ -479,8 +482,12 @@ app.put('/api/package/:id', requireRole(['cashier', 'owner', 'cameraman']), asyn
       }
     }
 
+    if (secondPaymentType !== undefined && secondPaymentType != null) {
+      updateFields.second_payment_type = ['Cash', 'Bank', 'Telebirr'].includes(secondPaymentType) ? secondPaymentType : 'Cash'
+    }
+
     if (remainderPaymentType !== undefined) {
-      updateFields.remainder_payment_type = ['Cash', 'Bank'].includes(remainderPaymentType) ? remainderPaymentType : null
+      updateFields.remainder_payment_type = ['Cash', 'Bank', 'Telebirr'].includes(remainderPaymentType) ? remainderPaymentType : null
     }
 
     const entries = Object.entries(updateFields)
@@ -610,7 +617,8 @@ app.post('/api/package/:id/confirm-second', requireRole(['owner']), async (req, 
     if (!pkg) return res.status(404).json({ error: 'Package not found' })
     if (pkg.secondPayment <= 0) return res.status(400).json({ error: 'No second payment on this package' })
     if (pkg.secondPaymentConfirmed) return res.status(400).json({ error: 'Second payment already confirmed' })
-    if (pkg.paymentType === 'Cash' && !pkg.secondPaymentCashierConfirmed) return res.status(400).json({ error: 'Cashier has not confirmed the second payment yet' })
+    const effectiveSecondType = pkg.secondPaymentType || pkg.paymentType
+    if (effectiveSecondType === 'Cash' && !pkg.secondPaymentCashierConfirmed) return res.status(400).json({ error: 'Cashier has not confirmed the second payment yet' })
     const { rows: updated } = await pool.query(
       `UPDATE package
        SET second_payment_confirmed = TRUE, second_payment_confirmed_by = $2, second_payment_confirmed_at = NOW()

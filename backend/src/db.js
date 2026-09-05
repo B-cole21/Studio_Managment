@@ -30,6 +30,11 @@ pool.query('ALTER TABLE package ALTER COLUMN remainder_payment_type DROP NOT NUL
   console.error('Migration note:', err.message)
 })
 
+// Auto-migration: ensure second_payment_type exists on package
+pool.query("ALTER TABLE package ADD COLUMN IF NOT EXISTS second_payment_type TEXT DEFAULT 'Cash'").catch((err) => {
+  console.error('Migration note:', err.message)
+})
+
 // Auto-migration: settings table double booking columns
 pool.query('ALTER TABLE settings ADD COLUMN IF NOT EXISTS allow_double_booking BOOLEAN DEFAULT TRUE').catch(() => {})
 pool.query('ALTER TABLE settings ADD COLUMN IF NOT EXISTS camera_count INTEGER DEFAULT 2').catch(() => {})

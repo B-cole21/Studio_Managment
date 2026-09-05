@@ -42,6 +42,7 @@ CREATE TABLE package (
   frame                TEXT,
   first_payment        NUMERIC(10, 2) NOT NULL DEFAULT 0,
   second_payment       NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  second_payment_type  TEXT DEFAULT 'Cash',
   remainder            NUMERIC(10, 2) NOT NULL DEFAULT 0,
   remainder_payment_type TEXT,
   date                 DATE,

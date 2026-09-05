@@ -4,7 +4,7 @@ import {
   Plus, Save, Search, SquarePen, Wallet, X,
 } from 'lucide-react'
 import { useStore } from '../lib/store'
-import type { Package as PackageRecord } from '../lib/types'
+import type { Package as PackageRecord, PaymentMethod } from '../lib/types'
 import { formatDate, todayISO, datePartOf } from '../lib/format'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button, IconButton } from '../components/ui/Button'
@@ -17,6 +17,12 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { Badge, type BadgeTone } from '../components/ui/Badge'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
+const paymentMethodOptions = [
+  { value: 'Cash', label: 'Cash' },
+  { value: 'Bank', label: 'Bank' },
+  { value: 'Telebirr', label: 'Telebirr' },
+]
+
 interface PackageDraft {
   name: string
   phone: string
@@ -26,7 +32,9 @@ interface PackageDraft {
   secondPayment: string
   remainder: string
   date: string
-  paymentType: 'Cash' | 'Bank'
+  paymentType: PaymentMethod
+  secondPaymentType: PaymentMethod
+  remainderPaymentType: PaymentMethod
   fullPayment: boolean
   pendingSelection: boolean
 }
@@ -41,6 +49,8 @@ const emptyDraft = (): PackageDraft => ({
   remainder: '',
   date: todayISO(),
   paymentType: 'Cash',
+  secondPaymentType: 'Cash',
+  remainderPaymentType: 'Cash',
   fullPayment: false,
   pendingSelection: false,
 })
@@ -49,9 +59,11 @@ interface CompleteDraft {
   quantity: string
   frame: string
   secondPayment: string
+  secondPaymentType: PaymentMethod
   remainder: string
+  remainderPaymentType: PaymentMethod
   date: string
-  paymentType: 'Cash' | 'Bank'
+  paymentType: PaymentMethod
   fullPayment: boolean
   remainderReceived: boolean
 }
@@ -60,10 +72,25 @@ const emptyCompleteDraft = (pkg: PackageRecord): CompleteDraft => ({
   quantity: String(pkg.quantity ?? 1),
   frame: pkg.frame ?? '',
   secondPayment: '',
+  secondPaymentType: (pkg.secondPaymentType as PaymentMethod) || 'Cash',
   remainder: pkg.remainder != null ? String(pkg.remainder) : '',
+  remainderPaymentType: (pkg.remainderPaymentType as PaymentMethod) || 'Cash',
   date: pkg.date || todayISO(),
-  paymentType: pkg.paymentType,
+  paymentType: (pkg.paymentType as PaymentMethod) || 'Cash',
   fullPayment: pkg.fullPayment,
+  remainderReceived: false,
+})
+
+const initialCompleteDraft = (): CompleteDraft => ({
+  quantity: '1',
+  frame: '',
+  secondPayment: '',
+  secondPaymentType: 'Cash',
+  remainder: '',
+  remainderPaymentType: 'Cash',
+  date: todayISO(),
+  paymentType: 'Cash',
+  fullPayment: false,
   remainderReceived: false,
 })
 
@@ -81,7 +108,7 @@ function statusOf(pkg: PackageRecord): { label: string; tone: BadgeTone } {
   }
 
   const isFirstCash = pkg.paymentType === 'Cash'
-  const isSecondCash = pkg.paymentType === 'Cash'
+  const isSecondCash = (pkg.secondPaymentType || pkg.paymentType) === 'Cash'
   const effRemainderType = pkg.remainderPaymentType || pkg.paymentType || 'Cash'
   const isRemainderCash = effRemainderType === 'Cash'
 
@@ -140,7 +167,7 @@ export function PackagePage() {
   const [remainderTarget, setRemainderTarget] = useState<PackageRecord | null>(null)
   const [remainderValue, setRemainderValue] = useState('')
   const [remainderReceived, setRemainderReceived] = useState(false)
-  const [remainderPaymentType, setRemainderPaymentType] = useState<'Cash' | 'Bank'>('Cash')
+  const [remainderPaymentType, setRemainderPaymentType] = useState<PaymentMethod>('Cash')
 
   const [confirmFirstTarget, setConfirmFirstTarget] = useState<PackageRecord | null>(null)
   const [confirmRemainderTarget, setConfirmRemainderTarget] = useState<PackageRecord | null>(null)
@@ -150,10 +177,10 @@ export function PackagePage() {
   const [cashierConfirmSecondTarget, setCashierConfirmSecondTarget] = useState<PackageRecord | null>(null)
 
   const [completeTarget, setCompleteTarget] = useState<PackageRecord | null>(null)
-  const [completeDraft, setCompleteDraft] = useState<CompleteDraft>(emptyCompleteDraft(emptyDraft as unknown as PackageRecord))
+  const [completeDraft, setCompleteDraft] = useState<CompleteDraft>(initialCompleteDraft)
 
   const [editPackageTarget, setEditPackageTarget] = useState<PackageRecord | null>(null)
-  const [editPackageDraft, setEditPackageDraft] = useState<PackageDraft>(emptyDraft)
+  const [editPackageDraft, setEditPackageDraft] = useState<PackageDraft>(emptyDraft())
 
   const [busy, setBusy] = useState(false)
   const [dateFilter, setDateFilter] = useState('')
@@ -193,6 +220,7 @@ export function PackagePage() {
   const phoneValid = /^09\d{8}$/.test(phoneDigits)
   const quantityNum = Number(draft.quantity)
   const firstNum = Number(draft.firstPayment)
+  const secondNum = Number(draft.secondPayment || 0)
   const remainderNum = Number(draft.remainder)
   const draftValid = draft.pendingSelection
     ? Boolean(draft.name.trim()) && phoneValid && firstNum >= 0 && draft.firstPayment.trim() !== '' && Boolean(draft.date)
@@ -202,6 +230,7 @@ export function PackagePage() {
     draft.quantity.trim() !== '' &&
     firstNum >= 0 &&
     draft.firstPayment.trim() !== '' &&
+    secondNum >= 0 &&
     (draft.fullPayment || (remainderNum >= 0 && draft.remainder.trim() !== '')) &&
     Boolean(draft.date)
 
@@ -229,7 +258,10 @@ export function PackagePage() {
         quantity: draft.pendingSelection ? undefined : quantityNum,
         frame: draft.frame.trim(),
         firstPayment: firstNum,
+        secondPayment: draft.pendingSelection ? 0 : secondNum,
+        secondPaymentType: draft.secondPaymentType,
         remainder: draft.pendingSelection ? undefined : (draft.fullPayment ? 0 : remainderNum),
+        remainderPaymentType: draft.fullPayment ? null : draft.remainderPaymentType,
         date: draft.date,
         paymentType: draft.paymentType,
         fullPayment: draft.pendingSelection ? false : draft.fullPayment,
@@ -259,7 +291,7 @@ export function PackagePage() {
     setRemainderTarget(pkg)
     setRemainderValue(String(pkg.remainder))
     setRemainderReceived(pkg.remainderReceived)
-    setRemainderPaymentType(pkg.remainderPaymentType ?? 'Cash')
+    setRemainderPaymentType((pkg.remainderPaymentType as PaymentMethod) ?? (pkg.paymentType as PaymentMethod) ?? 'Cash')
   }
 
   const saveRemainder = async () => {
@@ -449,7 +481,9 @@ export function PackagePage() {
       quantity: qty,
       frame: completeDraft.frame.trim(),
       secondPayment: second,
+      secondPaymentType: completeDraft.secondPaymentType,
       remainder: completeDraft.fullPayment ? 0 : rest,
+      remainderPaymentType: completeDraft.fullPayment ? null : completeDraft.remainderPaymentType,
       date: completeDraft.date,
       paymentType: completeDraft.paymentType,
       fullPayment: completeDraft.fullPayment,
@@ -487,7 +521,9 @@ export function PackagePage() {
       secondPayment: String(pkg.secondPayment ?? 0),
       remainder: pkg.remainder != null ? String(pkg.remainder) : '0',
       date: pkg.date || todayISO(),
-      paymentType: pkg.paymentType,
+      paymentType: (pkg.paymentType as PaymentMethod) || 'Cash',
+      secondPaymentType: (pkg.secondPaymentType as PaymentMethod) || 'Cash',
+      remainderPaymentType: (pkg.remainderPaymentType as PaymentMethod) || 'Cash',
       fullPayment: pkg.fullPayment,
       pendingSelection: pkg.pendingSelection,
     })
@@ -507,6 +543,8 @@ export function PackagePage() {
       secondPayment: Number(editPackageDraft.secondPayment || 0),
       remainder: editPackageDraft.fullPayment ? 0 : Number(editPackageDraft.remainder || 0),
       paymentType: editPackageDraft.paymentType,
+      secondPaymentType: editPackageDraft.secondPaymentType,
+      remainderPaymentType: editPackageDraft.fullPayment ? null : editPackageDraft.remainderPaymentType,
       fullPayment: editPackageDraft.fullPayment,
       pendingSelection: editPackageDraft.pendingSelection,
     }
@@ -606,9 +644,15 @@ export function PackagePage() {
                   </button>
                 )}
               >
-                {() => (
+                {(close) => (
                   <div className="p-2">
-                    <CalendarGrid value={dateFilter || todayISO()} onChange={(d) => setDateFilter(d)} />
+                    <CalendarGrid
+                      value={dateFilter || todayISO()}
+                      onChange={(d) => {
+                        setDateFilter(d)
+                        close()
+                      }}
+                    />
                   </div>
                 )}
               </Popover>
@@ -639,7 +683,7 @@ export function PackagePage() {
                 const total = pkg.firstPayment + pkg.secondPayment + (pkg.remainder ?? 0)
                 const isFullyPaid = (pkg.fullPayment && pkg.firstConfirmed) || (pkg.remainderConfirmed && (pkg.secondPayment <= 0 || pkg.secondPaymentConfirmed))
                 const isFirstCash = pkg.paymentType === 'Cash'
-                const isSecondCash = pkg.paymentType === 'Cash'
+                const isSecondCash = (pkg.secondPaymentType || pkg.paymentType) === 'Cash'
                 const effRemainderType = pkg.remainderPaymentType || pkg.paymentType || 'Cash'
                 const isRemainderCash = effRemainderType === 'Cash'
 
@@ -714,7 +758,7 @@ export function PackagePage() {
                       {pkg.secondPayment > 0 && (
                         <div className="rounded-md border border-border-subtle bg-surface-1 p-2">
                           <div className="flex items-center justify-between text-[11px] text-text-muted">
-                            <span>2nd ({pkg.paymentType})</span>
+                            <span>2nd ({pkg.secondPaymentType || pkg.paymentType})</span>
                             <span className="font-semibold text-text-primary">{fmt(pkg.secondPayment)}</span>
                           </div>
                           {!isFullyPaid && (
@@ -736,7 +780,7 @@ export function PackagePage() {
                       {!pkg.fullPayment && (
                         <div className="rounded-md border border-border-subtle bg-surface-1 p-2">
                           <div className="flex items-center justify-between text-[11px] text-text-muted">
-                            <span>Remainder {pkg.remainderPaymentType ? `(${pkg.remainderPaymentType})` : ''}</span>
+                            <span>Remainder ({pkg.remainderPaymentType || pkg.paymentType})</span>
                             <span className="font-semibold text-text-primary">{fmt(pkg.remainder)}</span>
                           </div>
                           {!isFullyPaid && (pkg.remainder ?? 0) > 0 && (
@@ -876,7 +920,7 @@ export function PackagePage() {
                     const total = pkg.firstPayment + pkg.secondPayment + (pkg.remainder ?? 0)
                     const isFullyPaid = (pkg.fullPayment && pkg.firstConfirmed) || (pkg.remainderConfirmed && (pkg.secondPayment <= 0 || pkg.secondPaymentConfirmed))
                     const isFirstCash = pkg.paymentType === 'Cash'
-                    const isSecondCash = pkg.paymentType === 'Cash'
+                    const isSecondCash = (pkg.secondPaymentType || pkg.paymentType) === 'Cash'
                     const effRemainderType = pkg.remainderPaymentType || pkg.paymentType || 'Cash'
                     const isRemainderCash = effRemainderType === 'Cash'
                     return (
@@ -909,7 +953,7 @@ export function PackagePage() {
                         <td className="whitespace-nowrap px-4 py-3 text-xs tabular text-text-secondary">
                           {pkg.secondPayment > 0 ? (
                             <>
-                              {fmt(pkg.secondPayment)} <span className="text-text-muted">({pkg.paymentType})</span>
+                              {fmt(pkg.secondPayment)} <span className="text-text-muted">({pkg.secondPaymentType || pkg.paymentType})</span>
                               {!isFullyPaid && (
                                 <div className="flex items-center gap-1 mt-0.5">
                                   {isSecondCash && (
@@ -928,7 +972,7 @@ export function PackagePage() {
                         <td className="whitespace-nowrap px-4 py-3 text-xs tabular text-text-secondary">
                           {pkg.fullPayment ? '—' : (
                             <>
-                              {fmt(pkg.remainder)} {pkg.remainderPaymentType ? <span className="text-text-muted">({pkg.remainderPaymentType})</span> : null}
+                              {fmt(pkg.remainder)} <span className="text-text-muted">({pkg.remainderPaymentType || pkg.paymentType})</span>
                               {!isFullyPaid && !pkg.fullPayment && (pkg.remainder ?? 0) > 0 && (
                                 <div className="flex items-center gap-1 mt-0.5">
                                   {pkg.remainderReceived ? (
@@ -1035,8 +1079,9 @@ export function PackagePage() {
         open={addOpen}
         onClose={() => setAddOpen(false)}
         title="Add package"
-        description="Record a package order and its first payment"
+        description="Record a package order and its payments"
         icon={<PackageIcon size={18} />}
+        size="lg"
         footer={
           <>
             <Button variant="secondary" onClick={() => setAddOpen(false)}>Cancel</Button>
@@ -1044,93 +1089,155 @@ export function PackagePage() {
           </>
         }
       >
-        <label className="mt-4 flex cursor-pointer select-none items-center gap-2 text-[13px] font-medium text-text-secondary">
-          <input
-            type="checkbox"
-            checked={draft.pendingSelection}
-            onChange={(e) =>
-              setDraft({ ...draft, pendingSelection: e.target.checked })
-            }
-            className="h-4 w-4 rounded border-border-strong accent-accent"
-          />
-          Customer has not selected photos yet — save for later
-        </label>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input label="Name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Customer name" />
-          <Input
-            label="Phone number"
-            type="tel"
-            maxLength={10}
-            value={draft.phone}
-            onChange={(e) => setDraft({ ...draft, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-            placeholder="09 123 456 78"
-            error={draft.phone.length > 0 && !phoneValid ? 'Must start with 09 followed by 8 digits' : undefined}
-          />
-          {!draft.pendingSelection && (
-            <>
-              <Input label="Quantity" type="number" min={1} value={draft.quantity} onChange={(e) => setDraft({ ...draft, quantity: e.target.value })} />
-              <Input label="Frame" value={draft.frame} onChange={(e) => setDraft({ ...draft, frame: e.target.value })} placeholder="e.g. Wood frame" />
-            </>
-          )}
-          <Input label="First payment" type="number" min={0} value={draft.firstPayment} onChange={(e) => setDraft({ ...draft, firstPayment: e.target.value })} />
-          {!draft.pendingSelection && (
-            <Input
-              label="Remainder"
-              type="number"
-              min={0}
-              value={draft.remainder}
-              onChange={(e) => setDraft({ ...draft, remainder: e.target.value })}
-              disabled={draft.fullPayment}
-              hint={draft.fullPayment ? 'Paid in full — no remainder' : undefined}
-            />
-          )}
-          <Select
-            label="Payment type"
-            value={draft.paymentType}
-            onChange={(e) => setDraft({ ...draft, paymentType: e.target.value as 'Cash' | 'Bank' })}
-            options={[
-              { value: 'Cash', label: 'Cash' },
-              { value: 'Bank', label: 'Bank' },
-            ]}
-          />
-        </div>
-        {!draft.pendingSelection && (
-          <label className="mt-4 flex cursor-pointer select-none items-center gap-2 text-[13px] font-medium text-text-secondary">
+        <div className="flex flex-col gap-4 pt-1">
+          {/* Order Date Bar */}
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-border-subtle bg-surface-1/50 px-3.5 py-2.5">
+            <div className="flex flex-col">
+              <span className="text-[13px] font-semibold text-text-primary">Order date</span>
+              <span className="text-xs text-text-muted">Ethiopian calendar</span>
+            </div>
+            <Popover
+              align="end"
+              trigger={(toggle) => (
+                <button
+                  type="button"
+                  onClick={toggle}
+                  className="flex h-9 items-center gap-2.5 rounded-md border border-border-strong bg-surface-2 px-3.5 text-left text-sm font-medium text-text-primary transition-colors hover:border-accent focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-soft"
+                >
+                  <CalendarDays size={15} className="text-text-muted shrink-0" />
+                  <span className="whitespace-nowrap">{formatDate(draft.date)}</span>
+                </button>
+              )}
+            >
+              {(close) => (
+                <div className="p-2">
+                  <CalendarGrid
+                    value={draft.date}
+                    onChange={(d) => {
+                      setDraft({ ...draft, date: d })
+                      close()
+                    }}
+                  />
+                </div>
+              )}
+            </Popover>
+          </div>
+
+          <label className="flex cursor-pointer select-none items-center gap-2 text-[13px] font-medium text-text-secondary">
             <input
               type="checkbox"
-              checked={draft.fullPayment}
+              checked={draft.pendingSelection}
               onChange={(e) =>
-                setDraft({ ...draft, fullPayment: e.target.checked, remainder: e.target.checked ? '0' : draft.remainder })
+                setDraft({ ...draft, pendingSelection: e.target.checked })
               }
               className="h-4 w-4 rounded border-border-strong accent-accent"
             />
-            Full payment — customer paid everything and left
+            Customer has not selected photos yet — save for later
           </label>
-        )}
-        <div className="mt-4">
-          <span className="mb-1.5 block text-[13px] font-medium text-text-secondary">Date</span>
-          <Popover
-            align="start"
-            trigger={(toggle) => (
-              <button
-                type="button"
-                onClick={toggle}
-                className="flex h-9 items-center gap-2 rounded-md border border-border-strong bg-surface-2 px-3 text-left text-sm text-text-primary transition-colors hover:border-accent focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-soft"
-              >
-                <CalendarDays size={15} className="text-text-muted" />
-                <span className="flex-1">{formatDate(draft.date)}</span>
-              </button>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input label="Customer name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Customer name" />
+            <Input
+              label="Phone number"
+              type="tel"
+              maxLength={10}
+              value={draft.phone}
+              onChange={(e) => setDraft({ ...draft, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              placeholder="09 123 456 78"
+              error={draft.phone.length > 0 && !phoneValid ? 'Must start with 09 followed by 8 digits' : undefined}
+            />
+            {!draft.pendingSelection && (
+              <>
+                <Input label="Quantity" type="number" min={1} value={draft.quantity} onChange={(e) => setDraft({ ...draft, quantity: e.target.value })} />
+                <Input label="Frame details" value={draft.frame} onChange={(e) => setDraft({ ...draft, frame: e.target.value })} placeholder="e.g. Wood frame or 20x30" />
+              </>
             )}
-          >
-            {() => (
-              <div className="p-2">
-                <CalendarGrid
-                  value={draft.date}
-                  onChange={(d) => setDraft({ ...draft, date: d })}
+          </div>
+
+          {/* Per-Tier Payments Breakdown */}
+          {draft.pendingSelection ? (
+            <div className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-surface-1/40 p-3.5">
+              <span className="text-xs font-semibold text-text-secondary">First payment deposit</span>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input label="First payment" type="number" min={0} value={draft.firstPayment} onChange={(e) => setDraft({ ...draft, firstPayment: e.target.value })} />
+                <Select
+                  label="Payment method"
+                  value={draft.paymentType}
+                  onChange={(e) => setDraft({ ...draft, paymentType: e.target.value as PaymentMethod })}
+                  options={paymentMethodOptions}
                 />
               </div>
-            )}
-          </Popover>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-3">
+              {/* First Payment */}
+              <div className="flex flex-col gap-2.5 rounded-lg border border-border-subtle bg-surface-1/40 p-3">
+                <Input
+                  label="First payment"
+                  type="number"
+                  min={0}
+                  value={draft.firstPayment}
+                  onChange={(e) => setDraft({ ...draft, firstPayment: e.target.value })}
+                />
+                <Select
+                  label="Payment method"
+                  value={draft.paymentType}
+                  onChange={(e) => setDraft({ ...draft, paymentType: e.target.value as PaymentMethod })}
+                  options={paymentMethodOptions}
+                />
+              </div>
+
+              {/* Second Payment */}
+              <div className="flex flex-col gap-2.5 rounded-lg border border-border-subtle bg-surface-1/40 p-3">
+                <Input
+                  label="Second payment"
+                  type="number"
+                  min={0}
+                  value={draft.secondPayment}
+                  onChange={(e) => setDraft({ ...draft, secondPayment: e.target.value })}
+                />
+                <Select
+                  label="Payment method"
+                  value={draft.secondPaymentType}
+                  onChange={(e) => setDraft({ ...draft, secondPaymentType: e.target.value as PaymentMethod })}
+                  options={paymentMethodOptions}
+                />
+              </div>
+
+              {/* Remainder */}
+              {!draft.fullPayment && (
+                <div className="flex flex-col gap-2.5 rounded-lg border border-border-subtle bg-surface-1/40 p-3">
+                  <Input
+                    label="Remainder"
+                    type="number"
+                    min={0}
+                    value={draft.remainder}
+                    onChange={(e) => setDraft({ ...draft, remainder: e.target.value })}
+                  />
+                  <Select
+                    label="Payment method"
+                    value={draft.remainderPaymentType}
+                    onChange={(e) => setDraft({ ...draft, remainderPaymentType: e.target.value as PaymentMethod })}
+                    options={paymentMethodOptions}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {!draft.pendingSelection && (
+            <label className="flex cursor-pointer select-none items-center gap-2 text-[13px] font-medium text-text-secondary">
+              <input
+                type="checkbox"
+                checked={draft.fullPayment}
+                onChange={(e) =>
+                  setDraft({ ...draft, fullPayment: e.target.checked, remainder: e.target.checked ? '0' : draft.remainder })
+                }
+                className="h-4 w-4 rounded border-border-strong accent-accent"
+              />
+              Full payment — customer paid everything and left
+            </label>
+          )}
         </div>
       </Dialog>
 
@@ -1155,32 +1262,33 @@ export function PackagePage() {
           </>
         }
       >
-        <Input
-          label="Remainder amount"
-          type="number"
-          min={0}
-          value={remainderValue}
-          onChange={(e) => setRemainderValue(e.target.value)}
-          autoFocus
-        />
-        <Select
-          label="Payment type"
-          value={remainderPaymentType}
-          onChange={(e) => setRemainderPaymentType(e.target.value as 'Cash' | 'Bank')}
-          options={[
-            { value: 'Cash', label: 'Cash' },
-            { value: 'Bank', label: 'Bank' },
-          ]}
-        />
-        <label className="mt-4 flex cursor-pointer select-none items-center gap-2 text-[13px] font-medium text-text-secondary">
-          <input
-            type="checkbox"
-            checked={remainderReceived}
-            onChange={(e) => setRemainderReceived(e.target.checked)}
-            className="h-4 w-4 rounded border-border-strong accent-accent"
+        <div className="flex flex-col gap-3.5 pt-1">
+          <Input
+            label="Remainder amount"
+            type="number"
+            min={0}
+            value={remainderValue}
+            onChange={(e) => setRemainderValue(e.target.value)}
+            autoFocus
           />
-          Customer paid this remainder — hand the money to the owner
-        </label>
+          <Select
+            label="Payment method"
+            value={remainderPaymentType}
+            onChange={(e) => setRemainderPaymentType(e.target.value as PaymentMethod)}
+            options={paymentMethodOptions}
+          />
+          <label className="flex cursor-pointer select-none items-center gap-2 text-[13px] font-medium text-text-secondary">
+            <input
+              type="checkbox"
+              checked={remainderReceived}
+              onChange={(e) => setRemainderReceived(e.target.checked)}
+              className="h-4 w-4 rounded border-border-strong accent-accent"
+            />
+            {remainderPaymentType === 'Cash'
+              ? 'Customer paid this remainder — hand the cash to the owner'
+              : `Customer paid this remainder via ${remainderPaymentType}`}
+          </label>
+        </div>
       </Dialog>
 
       <ConfirmDialog
@@ -1221,6 +1329,7 @@ export function PackagePage() {
         title="Complete package"
         description={completeTarget ? `${completeTarget.name} — add photo selection details` : undefined}
         icon={<FileCheck size={18} className="text-success" />}
+        size="lg"
         footer={
           <>
             <Button variant="secondary" onClick={() => setCompleteTarget(null)}>Cancel</Button>
@@ -1239,84 +1348,115 @@ export function PackagePage() {
           </>
         }
       >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input label="Quantity" type="number" min={1} value={completeDraft.quantity} onChange={(e) => setCompleteDraft({ ...completeDraft, quantity: e.target.value })} autoFocus />
-          <Input label="Frame" value={completeDraft.frame} onChange={(e) => setCompleteDraft({ ...completeDraft, frame: e.target.value })} placeholder="e.g. Wood frame" />
-          <Input
-            label="Second payment"
-            type="number"
-            min={0}
-            value={completeDraft.secondPayment}
-            onChange={(e) => setCompleteDraft({ ...completeDraft, secondPayment: e.target.value })}
-            hint={completeTarget && completeTarget.secondPayment > 0 ? `Previous: ${fmt(completeTarget.secondPayment)}` : undefined}
-          />
-          <Input
-            label="Remainder"
-            type="number"
-            min={0}
-            value={completeDraft.remainder}
-            onChange={(e) => setCompleteDraft({ ...completeDraft, remainder: e.target.value })}
-            disabled={completeDraft.fullPayment}
-            hint={completeDraft.fullPayment ? 'Paid in full — no remainder' : undefined}
-          />
-          <Select
-            label="Payment type"
-            value={completeDraft.paymentType}
-            onChange={(e) => setCompleteDraft({ ...completeDraft, paymentType: e.target.value as 'Cash' | 'Bank' })}
-            options={[
-              { value: 'Cash', label: 'Cash' },
-              { value: 'Bank', label: 'Bank' },
-            ]}
-          />
-        </div>
-        <label className="mt-4 flex cursor-pointer select-none items-center gap-2 text-[13px] font-medium text-text-secondary">
-          <input
-            type="checkbox"
-            checked={completeDraft.fullPayment}
-            onChange={(e) =>
-              setCompleteDraft({ ...completeDraft, fullPayment: e.target.checked, remainder: e.target.checked ? '0' : completeDraft.remainder })
-            }
-            className="h-4 w-4 rounded border-border-strong accent-accent"
-          />
-          Full payment — customer paid everything and left
-        </label>
-        {!completeDraft.fullPayment && Number(completeDraft.remainder) > 0 && (
-          <label className="mt-3 flex cursor-pointer select-none items-center gap-2 text-[13px] font-medium text-text-secondary">
-            <input
-              type="checkbox"
-              checked={completeDraft.remainderReceived}
-              onChange={(e) =>
-                setCompleteDraft({ ...completeDraft, remainderReceived: e.target.checked })
-              }
-              className="h-4 w-4 rounded border-border-strong accent-accent"
-            />
-            Customer paid this remainder — hand the money to the owner
-          </label>
-        )}
-        <div className="mt-4">
-          <span className="mb-1.5 block text-[13px] font-medium text-text-secondary">Date</span>
-          <Popover
-            align="start"
-            trigger={(toggle) => (
-              <button
-                type="button"
-                onClick={toggle}
-                className="flex h-9 items-center gap-2 rounded-md border border-border-strong bg-surface-2 px-3 text-left text-sm text-text-primary transition-colors hover:border-accent focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-soft"
-              >
-                <CalendarDays size={15} className="text-text-muted" />
-                <span className="flex-1">{formatDate(completeDraft.date)}</span>
-              </button>
-            )}
-          >
-            {() => (
-              <div className="p-2">
-                <CalendarGrid
-                  value={completeDraft.date}
-                  onChange={(d) => setCompleteDraft({ ...completeDraft, date: d })}
+        <div className="flex flex-col gap-4 pt-1">
+          {/* Order Date Bar */}
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-border-subtle bg-surface-1/50 px-3.5 py-2.5">
+            <div className="flex flex-col">
+              <span className="text-[13px] font-semibold text-text-primary">Order date</span>
+              <span className="text-xs text-text-muted">Ethiopian calendar</span>
+            </div>
+            <Popover
+              align="end"
+              trigger={(toggle) => (
+                <button
+                  type="button"
+                  onClick={toggle}
+                  className="flex h-9 items-center gap-2.5 rounded-md border border-border-strong bg-surface-2 px-3.5 text-left text-sm font-medium text-text-primary transition-colors hover:border-accent focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-soft"
+                >
+                  <CalendarDays size={15} className="text-text-muted shrink-0" />
+                  <span className="whitespace-nowrap">{formatDate(completeDraft.date)}</span>
+                </button>
+              )}
+            >
+              {(close) => (
+                <div className="p-2">
+                  <CalendarGrid
+                    value={completeDraft.date}
+                    onChange={(d) => {
+                      setCompleteDraft({ ...completeDraft, date: d })
+                      close()
+                    }}
+                  />
+                </div>
+              )}
+            </Popover>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input label="Quantity" type="number" min={1} value={completeDraft.quantity} onChange={(e) => setCompleteDraft({ ...completeDraft, quantity: e.target.value })} autoFocus />
+            <Input label="Frame details" value={completeDraft.frame} onChange={(e) => setCompleteDraft({ ...completeDraft, frame: e.target.value })} placeholder="e.g. Wood frame" />
+          </div>
+
+          {/* Payment Breakdown */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            {/* Second Payment */}
+            <div className="flex flex-col gap-2.5 rounded-lg border border-border-subtle bg-surface-1/40 p-3">
+              <Input
+                label="Second payment"
+                type="number"
+                min={0}
+                value={completeDraft.secondPayment}
+                onChange={(e) => setCompleteDraft({ ...completeDraft, secondPayment: e.target.value })}
+                hint={completeTarget && completeTarget.secondPayment > 0 ? `Previous: ${fmt(completeTarget.secondPayment)}` : undefined}
+              />
+              <Select
+                label="Payment method"
+                value={completeDraft.secondPaymentType}
+                onChange={(e) => setCompleteDraft({ ...completeDraft, secondPaymentType: e.target.value as PaymentMethod })}
+                options={paymentMethodOptions}
+              />
+            </div>
+
+            {/* Remainder */}
+            {!completeDraft.fullPayment && (
+              <div className="flex flex-col gap-2.5 rounded-lg border border-border-subtle bg-surface-1/40 p-3">
+                <Input
+                  label="Remainder"
+                  type="number"
+                  min={0}
+                  value={completeDraft.remainder}
+                  onChange={(e) => setCompleteDraft({ ...completeDraft, remainder: e.target.value })}
+                  disabled={completeDraft.fullPayment}
+                  hint={completeDraft.fullPayment ? 'Paid in full — no remainder' : undefined}
+                />
+                <Select
+                  label="Payment method"
+                  value={completeDraft.remainderPaymentType}
+                  onChange={(e) => setCompleteDraft({ ...completeDraft, remainderPaymentType: e.target.value as PaymentMethod })}
+                  options={paymentMethodOptions}
                 />
               </div>
             )}
-          </Popover>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-6 pt-1">
+            <label className="flex cursor-pointer select-none items-center gap-2 text-[13px] font-medium text-text-secondary">
+              <input
+                type="checkbox"
+                checked={completeDraft.fullPayment}
+                onChange={(e) =>
+                  setCompleteDraft({ ...completeDraft, fullPayment: e.target.checked, remainder: e.target.checked ? '0' : completeDraft.remainder })
+                }
+                className="h-4 w-4 rounded border-border-strong accent-accent"
+              />
+              Full payment — customer paid everything and left
+            </label>
+            {!completeDraft.fullPayment && Number(completeDraft.remainder) > 0 && (
+              <label className="flex cursor-pointer select-none items-center gap-2 text-[13px] font-medium text-text-secondary">
+                <input
+                  type="checkbox"
+                  checked={completeDraft.remainderReceived}
+                  onChange={(e) =>
+                    setCompleteDraft({ ...completeDraft, remainderReceived: e.target.checked })
+                  }
+                  className="h-4 w-4 rounded border-border-strong accent-accent"
+                />
+                {completeDraft.remainderPaymentType === 'Cash'
+                  ? 'Customer paid this remainder — hand the cash to the owner'
+                  : `Customer paid this remainder via ${completeDraft.remainderPaymentType}`}
+              </label>
+            )}
+          </div>
         </div>
       </Dialog>
 
@@ -1324,8 +1464,8 @@ export function PackagePage() {
         open={editPackageTarget != null}
         onClose={() => setEditPackageTarget(null)}
         title="Edit Package Details"
-
         icon={<SquarePen size={18} className="text-accent" />}
+        size="lg"
         footer={
           <>
             <Button variant="secondary" onClick={() => setEditPackageTarget(null)} disabled={busy}>Cancel</Button>
@@ -1335,27 +1475,34 @@ export function PackagePage() {
           </>
         }
       >
-        <div className="flex flex-col gap-4 pt-2">
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-[13px] font-medium text-text-secondary">Order date</span>
+        <div className="flex flex-col gap-4 pt-1">
+          {/* Order Date Bar */}
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-border-subtle bg-surface-1/50 px-3.5 py-2.5">
+            <div className="flex flex-col">
+              <span className="text-[13px] font-semibold text-text-primary">Order date</span>
+              <span className="text-xs text-text-muted">Ethiopian calendar</span>
+            </div>
             <Popover
-              align="start"
+              align="end"
               trigger={(toggle) => (
                 <button
                   type="button"
                   onClick={toggle}
-                  className="flex h-9 items-center gap-2 rounded-md border border-border-strong bg-surface-2 px-3 text-left text-sm text-text-primary hover:border-accent"
+                  className="flex h-9 items-center gap-2.5 rounded-md border border-border-strong bg-surface-2 px-3.5 text-left text-sm font-medium text-text-primary transition-colors hover:border-accent focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-soft"
                 >
-                  <CalendarDays size={15} className="text-text-muted" />
-                  <span>{formatDate(editPackageDraft.date)}</span>
+                  <CalendarDays size={15} className="text-text-muted shrink-0" />
+                  <span className="whitespace-nowrap">{formatDate(editPackageDraft.date)}</span>
                 </button>
               )}
             >
-              {() => (
+              {(close) => (
                 <div className="p-2">
                   <CalendarGrid
                     value={editPackageDraft.date}
-                    onChange={(d) => setEditPackageDraft({ ...editPackageDraft, date: d })}
+                    onChange={(d) => {
+                      setEditPackageDraft({ ...editPackageDraft, date: d })
+                      close()
+                    }}
                   />
                 </div>
               )}
@@ -1393,46 +1540,64 @@ export function PackagePage() {
             />
           </div>
 
+          {/* Per-Tier Payments Breakdown */}
           <div className="grid gap-4 sm:grid-cols-3">
-            <Input
-              label="First payment"
-              type="number"
-              min={0}
-              value={editPackageDraft.firstPayment}
-              onChange={(e) => setEditPackageDraft({ ...editPackageDraft, firstPayment: e.target.value })}
-            />
-            <Input
-              label="Second payment"
-              type="number"
-              min={0}
-              value={editPackageDraft.secondPayment}
-              onChange={(e) => setEditPackageDraft({ ...editPackageDraft, secondPayment: e.target.value })}
-            />
-            {!editPackageDraft.fullPayment && (
+            {/* First Payment Column */}
+            <div className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-surface-1/40 p-3">
               <Input
-                label="Remainder"
+                label="First payment"
                 type="number"
                 min={0}
-                value={editPackageDraft.remainder}
-                onChange={(e) => setEditPackageDraft({ ...editPackageDraft, remainder: e.target.value })}
+                value={editPackageDraft.firstPayment}
+                onChange={(e) => setEditPackageDraft({ ...editPackageDraft, firstPayment: e.target.value })}
               />
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-6">
-            <div className="w-48">
               <Select
-                label="Payment type"
+                label="Payment method"
                 value={editPackageDraft.paymentType}
-                onChange={(e) => setEditPackageDraft({ ...editPackageDraft, paymentType: e.target.value as 'Cash' | 'Bank' })}
-                options={[
-                  { value: 'Cash', label: 'Cash' },
-                  { value: 'Bank', label: 'Bank Transfer' },
-                ]}
+                onChange={(e) => setEditPackageDraft({ ...editPackageDraft, paymentType: e.target.value as PaymentMethod })}
+                options={paymentMethodOptions}
               />
             </div>
 
-            <label className="mt-5 flex cursor-pointer select-none items-center gap-2 text-[13px] font-medium text-text-secondary">
+            {/* Second Payment Column */}
+            <div className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-surface-1/40 p-3">
+              <Input
+                label="Second payment"
+                type="number"
+                min={0}
+                value={editPackageDraft.secondPayment}
+                onChange={(e) => setEditPackageDraft({ ...editPackageDraft, secondPayment: e.target.value })}
+              />
+              <Select
+                label="Payment method"
+                value={editPackageDraft.secondPaymentType}
+                onChange={(e) => setEditPackageDraft({ ...editPackageDraft, secondPaymentType: e.target.value as PaymentMethod })}
+                options={paymentMethodOptions}
+              />
+            </div>
+
+            {/* Remainder Column */}
+            {!editPackageDraft.fullPayment && (
+              <div className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-surface-1/40 p-3">
+                <Input
+                  label="Remainder"
+                  type="number"
+                  min={0}
+                  value={editPackageDraft.remainder}
+                  onChange={(e) => setEditPackageDraft({ ...editPackageDraft, remainder: e.target.value })}
+                />
+                <Select
+                  label="Payment method"
+                  value={editPackageDraft.remainderPaymentType}
+                  onChange={(e) => setEditPackageDraft({ ...editPackageDraft, remainderPaymentType: e.target.value as PaymentMethod })}
+                  options={paymentMethodOptions}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-6 pt-1">
+            <label className="flex cursor-pointer select-none items-center gap-2 text-[13px] font-medium text-text-secondary">
               <input
                 type="checkbox"
                 checked={editPackageDraft.fullPayment}
@@ -1442,7 +1607,7 @@ export function PackagePage() {
               Full Payment
             </label>
 
-            <label className="mt-5 flex cursor-pointer select-none items-center gap-2 text-[13px] font-medium text-text-secondary">
+            <label className="flex cursor-pointer select-none items-center gap-2 text-[13px] font-medium text-text-secondary">
               <input
                 type="checkbox"
                 checked={editPackageDraft.pendingSelection}

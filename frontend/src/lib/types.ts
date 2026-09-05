@@ -17,6 +17,8 @@ export interface Service {
   isBirthday?: boolean
 }
 
+export type PaymentMethod = 'Cash' | 'Bank' | 'Telebirr'
+
 export interface Package {
   id: ID
   name: string
@@ -25,9 +27,10 @@ export interface Package {
   frame: string
   firstPayment: number
   secondPayment: number
+  secondPaymentType?: PaymentMethod | null
   remainder: number | null
   date: string
-  paymentType: 'Cash' | 'Bank'
+  paymentType: PaymentMethod
   fullPayment: boolean
   firstConfirmed: boolean
   firstConfirmedBy?: number | null
@@ -37,7 +40,7 @@ export interface Package {
   firstCashierConfirmedAt?: string | null
   remainderReceived: boolean
   remainderReceivedAt?: string | null
-  remainderPaymentType: 'Cash' | 'Bank' | null
+  remainderPaymentType: PaymentMethod | null
   remainderConfirmed: boolean
   remainderConfirmedBy?: number | null
   remainderConfirmedAt?: string | null
