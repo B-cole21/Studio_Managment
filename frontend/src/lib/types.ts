@@ -2,7 +2,7 @@ export type ID = string
 
 export interface Booking {
   id: number
-  customerName: string
+  customerName?: string
   event: string
   date: string
   time: string

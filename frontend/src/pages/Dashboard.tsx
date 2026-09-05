@@ -83,7 +83,7 @@ export function Dashboard() {
     if (!pendingDelete) return
     try {
       await removeBooking(pendingDelete.id)
-      pushToast({ tone: 'success', title: 'Booking deleted', message: `${pendingDelete.customerName} · slot released` })
+      pushToast({ tone: 'success', title: 'Booking deleted', message: `${pendingDelete.phone} · slot released` })
     } catch (err) {
       pushToast({
         tone: 'error',
@@ -97,7 +97,7 @@ export function Dashboard() {
   const confirmReschedule = async (booking: Booking, newDate: string, newTime: string) => {
     try {
       await updateBooking(booking.id, {
-        customerName: booking.customerName,
+        customerName: booking.customerName || '',
         event: booking.event,
         date: newDate,
         time: newTime,
@@ -107,7 +107,7 @@ export function Dashboard() {
       pushToast({
         tone: 'success',
         title: 'Booking rescheduled',
-        message: `${booking.customerName} · ${formatDate(newDate, { short: true })} ${toEthiopianTime(newTime)}`,
+        message: `${booking.phone} · ${formatDate(newDate, { short: true })} ${toEthiopianTime(newTime)}`,
       })
     } catch (err) {
       pushToast({
@@ -138,7 +138,7 @@ export function Dashboard() {
 
   const q = search.trim().toLowerCase()
   const filteredBookings = q
-    ? viewBookings.filter((r) => r.booking.customerName.toLowerCase().includes(q) || r.booking.phone.includes(q))
+    ? viewBookings.filter((r) => r.booking.phone.includes(q) || r.booking.event.toLowerCase().includes(q))
     : viewBookings
 
   const filteredDayCounts = new Map<string, number>()
@@ -451,7 +451,7 @@ export function Dashboard() {
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
               type="text"
-              placeholder="Search name or phone…"
+              placeholder="Search phone or event…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 w-48 rounded-md border border-border-strong bg-surface-2 pl-8 pr-3 text-[13px] text-text-primary placeholder:text-text-muted transition-colors hover:border-accent focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
@@ -493,20 +493,14 @@ export function Dashboard() {
                     <div className="flex items-start justify-between gap-2 pt-0.5">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-semibold text-text-primary">{booking.customerName}</span>
+                          <a href={`tel:${booking.phone}`} className="text-sm font-semibold text-text-primary hover:text-accent hover:underline tabular">
+                            {booking.phone}
+                          </a>
                           <span className="rounded bg-accent-soft px-1.5 py-0.5 text-xs font-semibold text-accent tabular">
                             {toEthiopianTime(booking.time)}
                           </span>
                         </div>
                         <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-text-muted">
-                          {booking.phone ? (
-                            <a href={`tel:${booking.phone}`} className="text-text-secondary hover:text-accent hover:underline tabular">
-                              {booking.phone}
-                            </a>
-                          ) : (
-                            <span>No phone</span>
-                          )}
-                          <span>•</span>
                           <span className="text-text-secondary">{formatEventName(booking.event)}</span>
                           {svc?.isBirthday && !booking.event.toLowerCase().includes('birthday') && <Badge tone="info">Birthday</Badge>}
                           {booking.age != null && <span>({booking.age} yrs)</span>}
@@ -514,13 +508,13 @@ export function Dashboard() {
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <IconButton
-                          label={`Change date for ${booking.customerName}`}
+                          label={`Change date for ${booking.phone}`}
                           variant="ghost"
                           icon={<CalendarClock size={16} />}
                           onClick={() => setPendingReschedule(booking)}
                         />
                         <IconButton
-                          label={`Delete booking for ${booking.customerName}`}
+                          label={`Delete booking for ${booking.phone}`}
                           variant="ghost"
                           icon={<Trash2 size={16} />}
                           onClick={() => setPendingDelete(booking)}
@@ -540,7 +534,7 @@ export function Dashboard() {
                     <th className="px-5 py-2.5 font-medium">Day</th>
                     <th className="px-5 py-2.5 font-medium">Date</th>
                     <th className="px-5 py-2.5 font-medium">Time</th>
-                    <th className="px-5 py-2.5 font-medium">Customer</th>
+                    <th className="px-5 py-2.5 font-medium">Phone</th>
                     <th className="px-5 py-2.5 font-medium">Event</th>
                     <th className="px-5 py-2.5 font-medium"><span className="sr-only">Actions</span></th>
                   </tr>
@@ -572,9 +566,10 @@ export function Dashboard() {
                             {toEthiopianTime(booking.time)}
                           </span>
                         </td>
-                        <td className="px-5 py-3">
-                          <p className="text-[13px] font-medium text-text-primary">{booking.customerName}</p>
-                          <p className="text-xs tabular text-text-muted">{booking.phone}</p>
+                        <td className="px-5 py-3 tabular">
+                          <a href={`tel:${booking.phone}`} className="text-[13px] font-medium text-text-secondary hover:text-accent hover:underline">
+                            {booking.phone}
+                          </a>
                         </td>
                         <td className="px-5 py-3">
                           <p className="text-[13px] font-medium text-text-primary">
@@ -586,13 +581,13 @@ export function Dashboard() {
                         <td className="px-5 py-3 text-right">
                           <span className="inline-flex items-center gap-1">
                             <IconButton
-                              label={`Change date for ${booking.customerName}`}
+                              label={`Change date for ${booking.phone}`}
                               variant="ghost"
                               icon={<CalendarClock size={15} />}
                               onClick={() => setPendingReschedule(booking)}
                             />
                             <IconButton
-                              label={`Delete booking for ${booking.customerName}`}
+                              label={`Delete booking for ${booking.phone}`}
                               variant="ghost"
                               icon={<Trash2 size={15} />}
                               onClick={() => setPendingDelete(booking)}
@@ -615,7 +610,7 @@ export function Dashboard() {
         title="Delete booking?"
         message={
           pendingDelete
-            ? `The booking for ${pendingDelete.customerName} will be permanently removed and the time slot released.`
+            ? `The booking for ${pendingDelete.phone} (${pendingDelete.event}) will be permanently removed and the time slot released.`
             : undefined
         }
         onConfirm={confirmDelete}

@@ -160,14 +160,14 @@ app.get('/api/booking', async (_req, res, next) => {
 app.post('/api/booking', async (req, res, next) => {
   try {
     const { customerName, event, date, time, phone, age } = req.body
-    if (!customerName || !event || !date || !time || !phone) {
-      return res.status(400).json({ error: 'customerName, event, date, time and phone are required' })
+    if (!event || !date || !time || !phone) {
+      return res.status(400).json({ error: 'event, date, time and phone are required' })
     }
     const { rows } = await pool.query(
       `INSERT INTO booking (customer_name, event, date, time, phone, age)
        VALUES ($1, $2, $3::date, $4, $5, $6)
        RETURNING id, customer_name AS "customerName", event, date::text AS "date", time, phone, age`,
-      [customerName, event, date, time, phone, age ?? null],
+      [customerName ? customerName.trim() : '', event, date, time, phone, age ?? null],
     )
     res.status(201).json(rows[0])
   } catch (err) {

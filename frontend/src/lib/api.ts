@@ -8,7 +8,7 @@ export interface AuthUser {
 }
 
 export interface BookingInput {
-  customerName: string
+  customerName?: string
   event: string
   date: string
   time: string

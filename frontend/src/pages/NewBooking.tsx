@@ -30,7 +30,6 @@ export function NewBooking() {
     [editId, state.bookings],
   )
 
-  const [customerName, setCustomerName] = useState('')
   const [phone, setPhone] = useState('')
   const [serviceId, setServiceId] = useState('')
   const [date, setDate] = useState<string>(params.get('date') ?? todayISO())
@@ -41,7 +40,6 @@ export function NewBooking() {
 
   useEffect(() => {
     if (editing) {
-      setCustomerName(editing.customerName)
       setPhone(editing.phone)
       setServiceId(state.services.find((s) => s.name === editing.event)?.id ?? '')
       setDate(editing.date)
@@ -56,7 +54,6 @@ export function NewBooking() {
   const needAge = Boolean(service?.isBirthday)
   const ageNum = age.trim() === '' ? undefined : Number(age)
 
-  const nameValid = customerName.trim().length >= 2
   const phoneDigits = phone.replace(/\D/g, '')
   const phoneValid = /^09\d{8}$/.test(phoneDigits)
 
@@ -83,14 +80,14 @@ export function NewBooking() {
       return (h ?? 0) * 60 + (m ?? 0) > now.getHours() * 60 + now.getMinutes()
     })()
 
-  const valid = Boolean(serviceId && date && start && slotFree && timeInFuture && nameValid && phoneValid) &&
+  const valid = Boolean(serviceId && date && start && slotFree && timeInFuture && phoneValid) &&
     (!needAge || (ageNum != null && ageNum > 0))
 
   const submit = async () => {
     if (!valid || !service) return
     setSaving(true)
     const input = {
-      customerName: customerName.trim(),
+      customerName: '',
       event: service.name,
       date,
       time: start,
@@ -103,7 +100,7 @@ export function NewBooking() {
         pushToast({
           tone: 'success',
           title: 'Booking updated',
-          message: `${input.customerName} · ${formatDate(date, { short: true })} ${toEthiopianTime(start)}`,
+          message: `${phoneDigits} · ${formatDate(date, { short: true })} ${toEthiopianTime(start)}`,
         })
         navigate('/bookings')
       } else {
@@ -111,7 +108,7 @@ export function NewBooking() {
         pushToast({
           tone: 'success',
           title: 'Booking created',
-          message: `${input.customerName} · ${formatDate(date, { short: true })} ${toEthiopianTime(start)}`,
+          message: `${phoneDigits} · ${formatDate(date, { short: true })} ${toEthiopianTime(start)}`,
         })
         setCreated(booking.id)
       }
@@ -157,7 +154,7 @@ export function NewBooking() {
       <PageHeader
         eyebrow="Scheduling"
         title={editing ? 'Edit booking' : 'New booking'}
-        description="Enter the customer, event, date, time and phone number"
+        description="Enter the phone number, event, date and time slot"
       />
 
       <div className="max-w-2xl flex flex-col gap-5">
@@ -210,26 +207,17 @@ export function NewBooking() {
         </section>
 
         <section className="rounded-xl border border-border-subtle bg-surface-2 p-5">
-          <h2 className="mb-4 text-[13px] font-semibold uppercase tracking-wide text-text-muted">2 · Customer</h2>
+          <h2 className="mb-4 text-[13px] font-semibold uppercase tracking-wide text-text-muted">2 · Phone</h2>
           <Input
-            label="Customer name"
-            placeholder="Full name"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            error={customerName.length > 0 && !nameValid ? 'Enter at least 2 characters' : undefined}
+            label="Phone number"
+            type="tel"
+            placeholder="09 123 456 78"
+            maxLength={10}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+            error={phone.length > 0 && !phoneValid ? 'Must start with 09 followed by 8 digits' : undefined}
             required
           />
-          <div className="mt-3">
-            <Input
-              label="Phone number"
-              type="tel"
-              placeholder="09 123 456 78"
-              maxLength={10}
-              value={phone}
-              onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-              error={phone.length > 0 && !phoneValid ? 'Must start with 09 followed by 8 digits' : undefined}
-            />
-          </div>
         </section>
 
         <section className="rounded-xl border border-border-subtle bg-surface-2 p-5">
@@ -271,8 +259,8 @@ export function NewBooking() {
             title="Time conflict"
             message={
               maxBookings === 1
-                ? `This time slot is already booked by ${conflicts[0]?.customerName}. Double booking is currently disabled (1 camera active).`
-                : `This time is fully booked by ${conflicts.map((c) => c.customerName).join(' and ')}. Pick another slot.`
+                ? `This time slot is already booked (${conflicts[0]?.phone}). Double booking is currently disabled (1 camera active).`
+                : `This time is fully booked (${conflicts.map((c) => c.phone).join(', ')}). Pick another slot.`
             }
           />
         )}
@@ -280,7 +268,7 @@ export function NewBooking() {
           <InlineAlert
             tone="info"
             title="Double booking"
-            message={`There is already a booking at this time by ${conflicts[0].customerName}. Your active camera capacity (${maxBookings} cameras) allows double booking.`}
+            message={`There is already a booking at this time (${conflicts[0].phone}). Your active camera capacity (${maxBookings} cameras) allows double booking.`}
           />
         )}
         {start && service && slotFree && conflicts.length === 0 && (
