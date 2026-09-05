@@ -50,7 +50,7 @@ export function ChangeDateDialog({ open, booking, onClose, onConfirm }: Props) {
       open={open}
       onClose={onClose}
       title="Change booking date"
-      description={booking ? `Rescheduling ${booking.customerName || booking.phone}` : undefined}
+      description={booking ? `Rescheduling booking for ${booking.phone}` : undefined}
       icon={<CalendarDays size={20} />}
       size="md"
       footer={

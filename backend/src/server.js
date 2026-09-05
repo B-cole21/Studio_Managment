@@ -145,6 +145,18 @@ app.delete('/api/services/:id', async (req, res, next) => {
   }
 })
 
+function validateEthiopianPhone(phone) {
+  if (!phone) return null
+  let digits = String(phone).replace(/\D/g, '')
+  if (digits.startsWith('251') && digits.length === 12) {
+    digits = '0' + digits.slice(3)
+  }
+  if (!/^(09|07)\d{8}$/.test(digits)) {
+    return null
+  }
+  return digits
+}
+
 app.get('/api/booking', async (_req, res, next) => {
   try {
     const { rows } = await pool.query(
@@ -163,11 +175,15 @@ app.post('/api/booking', async (req, res, next) => {
     if (!event || !date || !time || !phone) {
       return res.status(400).json({ error: 'event, date, time and phone are required' })
     }
+    const cleanPhone = validateEthiopianPhone(phone)
+    if (!cleanPhone) {
+      return res.status(400).json({ error: 'Phone number must start with 09 or 07 followed by 8 digits (10 digits total)' })
+    }
     const { rows } = await pool.query(
       `INSERT INTO booking (event, date, time, phone, age)
        VALUES ($1, $2::date, $3, $4, $5)
        RETURNING id, event, date::text AS "date", time, phone, age`,
-      [event, date, time, phone, age ?? null],
+      [event, date, time, cleanPhone, age ?? null],
     )
     res.status(201).json(rows[0])
   } catch (err) {
@@ -178,6 +194,13 @@ app.post('/api/booking', async (req, res, next) => {
 app.put('/api/booking/:id', async (req, res, next) => {
   try {
     const { event, date, time, phone, age } = req.body
+    let cleanPhone = undefined
+    if (phone !== undefined) {
+      cleanPhone = validateEthiopianPhone(phone)
+      if (!cleanPhone) {
+        return res.status(400).json({ error: 'Phone number must start with 09 or 07 followed by 8 digits (10 digits total)' })
+      }
+    }
     const { rows } = await pool.query(
       `UPDATE booking
        SET event = COALESCE($2, event),
@@ -187,7 +210,7 @@ app.put('/api/booking/:id', async (req, res, next) => {
            age = COALESCE($6, age)
        WHERE id = $1
        RETURNING id, event, date::text AS "date", time, phone, age`,
-      [req.params.id, event, date, time, phone, age],
+      [req.params.id, event, date, time, cleanPhone, age],
     )
     if (rows.length === 0) return res.status(404).json({ error: 'Booking not found' })
     res.json(rows[0])
@@ -290,14 +313,18 @@ app.post('/api/package', requireRole(['cashier', 'cameraman', 'owner']), async (
     if (!name || !phone) {
       return res.status(400).json({ error: 'name and phone are required' })
     }
+    const cleanPhone = validateEthiopianPhone(phone)
+    if (!cleanPhone) {
+      return res.status(400).json({ error: 'Phone number must start with 09 or 07 followed by 8 digits (10 digits total)' })
+    }
 
     const { rows: dupRows } = await pool.query(
       `SELECT id FROM package
        WHERE LOWER(TRIM(name)) = LOWER(TRIM($1)) AND phone = $2 AND (date = $3::date OR ($3::date IS NULL AND date IS NULL))`,
-      [name.trim(), phone.trim(), date ?? null],
+      [name.trim(), cleanPhone, date ?? null],
     )
     if (dupRows.length > 0) {
-      return res.status(409).json({ error: `Data is already present! Package for "${name.trim()}" with phone ${phone.trim()} already exists.` })
+      return res.status(409).json({ error: `Data is already present! Package for "${name.trim()}" with phone ${cleanPhone} already exists.` })
     }
     const isPending = Boolean(pendingSelection)
     const isCashier = me.role === 'cashier'
@@ -322,7 +349,7 @@ app.post('/api/package', requireRole(['cashier', 'cameraman', 'owner']), async (
                             second_payment_type, remainder_payment_type)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
        ${packageReturning}`,
-      [id, name, phone, qty, frame ?? null, first, second, rest, date ?? null, type, full, me.id, me.userName, isPending,
+      [id, name, cleanPhone, qty, frame ?? null, first, second, rest, date ?? null, type, full, me.id, me.userName, isPending,
        firstCashierConfirmed, firstCashierConfirmed ? me.id : null, firstCashierConfirmed ? new Date() : null, secType, rType],
     )
     res.status(201).json(rows[0])
@@ -346,7 +373,11 @@ app.put('/api/package/:id', requireRole(['cashier', 'owner', 'cameraman']), asyn
     }
 
     if (phone !== undefined) {
-      updateFields.phone = phone.trim()
+      const cleanPhone = validateEthiopianPhone(phone)
+      if (!cleanPhone) {
+        return res.status(400).json({ error: 'Phone number must start with 09 or 07 followed by 8 digits (10 digits total)' })
+      }
+      updateFields.phone = cleanPhone
     }
 
     if (pendingSelection !== undefined) {

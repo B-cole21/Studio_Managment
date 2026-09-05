@@ -55,7 +55,7 @@ export function NewBooking() {
   const ageNum = age.trim() === '' ? undefined : Number(age)
 
   const phoneDigits = phone.replace(/\D/g, '')
-  const phoneValid = /^09\d{8}$/.test(phoneDigits)
+  const phoneValid = /^(09|07)\d{8}$/.test(phoneDigits)
 
   const dateBookings = state.bookings.filter((b) => b.date === date)
   const conflicts = useMemo(() => {
@@ -211,11 +211,17 @@ export function NewBooking() {
           <Input
             label="Phone number"
             type="tel"
-            placeholder="09 123 456 78"
+            placeholder="09... or 07... (10 digits)"
             maxLength={10}
             value={phone}
-            onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-            error={phone.length > 0 && !phoneValid ? 'Must start with 09 followed by 8 digits' : undefined}
+            onChange={(e) => {
+              let val = e.target.value.replace(/\D/g, '')
+              if (val.startsWith('251') && val.length >= 12) {
+                val = '0' + val.slice(3)
+              }
+              setPhone(val.slice(0, 10))
+            }}
+            error={phone.length > 0 && !phoneValid ? 'Must start with 09 or 07 followed by 8 digits' : undefined}
             required
           />
         </section>

@@ -235,7 +235,7 @@ export function PackagePage() {
   }, [packages, filter, dateFilter, search])
 
   const phoneDigits = draft.phone.replace(/\D/g, '')
-  const phoneValid = /^09\d{8}$/.test(phoneDigits)
+  const phoneValid = /^(09|07)\d{8}$/.test(phoneDigits)
   const quantityNum = Number(draft.quantity)
   const firstNum = Number(draft.firstPayment)
   const remainderNum = Number(draft.remainder)
@@ -549,6 +549,10 @@ export function PackagePage() {
     if (!editPackageTarget) return
     const target = editPackageTarget
     const phoneDigits = editPackageDraft.phone.replace(/\D/g, '')
+    if (phoneDigits && !/^(09|07)\d{8}$/.test(phoneDigits)) {
+      pushToast({ tone: 'error', title: 'Invalid phone number', message: 'Must start with 09 or 07 followed by 8 digits' })
+      return
+    }
     const payload = {
       name: editPackageDraft.name.trim(),
       phone: phoneDigits,
@@ -1184,9 +1188,15 @@ export function PackagePage() {
               type="tel"
               maxLength={10}
               value={draft.phone}
-              onChange={(e) => setDraft({ ...draft, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-              placeholder="09 123 456 78"
-              error={draft.phone.length > 0 && !phoneValid ? 'Must start with 09 followed by 8 digits' : undefined}
+              onChange={(e) => {
+                let val = e.target.value.replace(/\D/g, '')
+                if (val.startsWith('251') && val.length >= 12) {
+                  val = '0' + val.slice(3)
+                }
+                setDraft({ ...draft, phone: val.slice(0, 10) })
+              }}
+              placeholder="09... or 07... (10 digits)"
+              error={draft.phone.length > 0 && !phoneValid ? 'Must start with 09 or 07 followed by 8 digits' : undefined}
             />
             {!draft.pendingSelection && (
               <>
@@ -1545,7 +1555,15 @@ export function PackagePage() {
               type="tel"
               maxLength={10}
               value={editPackageDraft.phone}
-              onChange={(e) => setEditPackageDraft({ ...editPackageDraft, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              onChange={(e) => {
+                let val = e.target.value.replace(/\D/g, '')
+                if (val.startsWith('251') && val.length >= 12) {
+                  val = '0' + val.slice(3)
+                }
+                setEditPackageDraft({ ...editPackageDraft, phone: val.slice(0, 10) })
+              }}
+              placeholder="09... or 07... (10 digits)"
+              error={editPackageDraft.phone.length > 0 && !/^(09|07)\d{8}$/.test(editPackageDraft.phone.replace(/\D/g, '')) ? 'Must start with 09 or 07 followed by 8 digits' : undefined}
             />
           </div>
 
