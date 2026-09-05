@@ -18,41 +18,11 @@ import { Badge, type BadgeTone } from '../components/ui/Badge'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
 
-function PaymentMethodSelector({
-  label = 'Payment method',
-  value,
-  onChange,
-}: {
-  label?: string
-  value: PaymentMethod
-  onChange: (method: PaymentMethod) => void
-}) {
-  const methods: PaymentMethod[] = ['Cash', 'Bank', 'Telebirr']
-  return (
-    <div className="flex flex-col gap-1.5">
-      {label && <span className="text-[13px] font-medium text-text-secondary">{label}</span>}
-      <div className="grid grid-cols-3 gap-1 rounded-lg bg-surface-2 p-1 border border-border-strong">
-        {methods.map((method) => {
-          const active = value === method
-          return (
-            <button
-              key={method}
-              type="button"
-              onClick={() => onChange(method)}
-              className={`flex h-8 items-center justify-center rounded text-xs font-semibold transition-all ${
-                active
-                  ? 'bg-accent text-accent-contrast shadow-sm font-bold'
-                  : 'text-text-muted hover:text-text-primary hover:bg-surface-3/70'
-              }`}
-            >
-              {method}
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
+const paymentMethodOptions = [
+  { value: 'Cash', label: 'Cash' },
+  { value: 'Bank', label: 'Bank' },
+  { value: 'Telebirr', label: 'Telebirr' },
+]
 
 function PaymentMethodBadge({ method }: { method?: PaymentMethod | string | null }) {
   if (!method) return null
@@ -1224,9 +1194,11 @@ export function PackagePage() {
               <span className="text-xs font-semibold text-text-secondary">First payment deposit</span>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Input label="First payment" type="number" min={0} value={draft.firstPayment} onChange={(e) => setDraft({ ...draft, firstPayment: e.target.value })} />
-                <PaymentMethodSelector
+                <Select
+                  label="Payment method"
                   value={draft.paymentType}
-                  onChange={(m) => setDraft({ ...draft, paymentType: m })}
+                  onChange={(e) => setDraft({ ...draft, paymentType: e.target.value as PaymentMethod })}
+                  options={paymentMethodOptions}
                 />
               </div>
             </div>
@@ -1241,9 +1213,11 @@ export function PackagePage() {
                   value={draft.firstPayment}
                   onChange={(e) => setDraft({ ...draft, firstPayment: e.target.value })}
                 />
-                <PaymentMethodSelector
+                <Select
+                  label="Payment method"
                   value={draft.paymentType}
-                  onChange={(m) => setDraft({ ...draft, paymentType: m })}
+                  onChange={(e) => setDraft({ ...draft, paymentType: e.target.value as PaymentMethod })}
+                  options={paymentMethodOptions}
                 />
               </div>
 
@@ -1257,9 +1231,11 @@ export function PackagePage() {
                     value={draft.remainder}
                     onChange={(e) => setDraft({ ...draft, remainder: e.target.value })}
                   />
-                  <PaymentMethodSelector
+                  <Select
+                    label="Payment method"
                     value={draft.remainderPaymentType}
-                    onChange={(m) => setDraft({ ...draft, remainderPaymentType: m })}
+                    onChange={(e) => setDraft({ ...draft, remainderPaymentType: e.target.value as PaymentMethod })}
+                    options={paymentMethodOptions}
                   />
                 </div>
               )}
@@ -1312,9 +1288,11 @@ export function PackagePage() {
             onChange={(e) => setRemainderValue(e.target.value)}
             autoFocus
           />
-          <PaymentMethodSelector
+          <Select
+            label="Payment method"
             value={remainderPaymentType}
-            onChange={(m) => setRemainderPaymentType(m)}
+            onChange={(e) => setRemainderPaymentType(e.target.value as PaymentMethod)}
+            options={paymentMethodOptions}
           />
           <label className="flex cursor-pointer select-none items-center gap-2 text-[13px] font-medium text-text-secondary">
             <input
@@ -1438,9 +1416,11 @@ export function PackagePage() {
                 onChange={(e) => setCompleteDraft({ ...completeDraft, secondPayment: e.target.value })}
                 hint={completeTarget && completeTarget.secondPayment > 0 ? `Previous: ${fmt(completeTarget.secondPayment)}` : undefined}
               />
-              <PaymentMethodSelector
+              <Select
+                label="Payment method"
                 value={completeDraft.secondPaymentType}
-                onChange={(m) => setCompleteDraft({ ...completeDraft, secondPaymentType: m })}
+                onChange={(e) => setCompleteDraft({ ...completeDraft, secondPaymentType: e.target.value as PaymentMethod })}
+                options={paymentMethodOptions}
               />
             </div>
 
@@ -1456,9 +1436,11 @@ export function PackagePage() {
                   disabled={completeDraft.fullPayment}
                   hint={completeDraft.fullPayment ? 'Paid in full — no remainder' : undefined}
                 />
-                <PaymentMethodSelector
+                <Select
+                  label="Payment method"
                   value={completeDraft.remainderPaymentType}
-                  onChange={(m) => setCompleteDraft({ ...completeDraft, remainderPaymentType: m })}
+                  onChange={(e) => setCompleteDraft({ ...completeDraft, remainderPaymentType: e.target.value as PaymentMethod })}
+                  options={paymentMethodOptions}
                 />
               </div>
             )}
@@ -1586,9 +1568,11 @@ export function PackagePage() {
                 value={editPackageDraft.firstPayment}
                 onChange={(e) => setEditPackageDraft({ ...editPackageDraft, firstPayment: e.target.value })}
               />
-              <PaymentMethodSelector
+              <Select
+                label="Payment method"
                 value={editPackageDraft.paymentType}
-                onChange={(m) => setEditPackageDraft({ ...editPackageDraft, paymentType: m })}
+                onChange={(e) => setEditPackageDraft({ ...editPackageDraft, paymentType: e.target.value as PaymentMethod })}
+                options={paymentMethodOptions}
               />
             </div>
 
@@ -1601,9 +1585,11 @@ export function PackagePage() {
                 value={editPackageDraft.secondPayment}
                 onChange={(e) => setEditPackageDraft({ ...editPackageDraft, secondPayment: e.target.value })}
               />
-              <PaymentMethodSelector
+              <Select
+                label="Payment method"
                 value={editPackageDraft.secondPaymentType}
-                onChange={(m) => setEditPackageDraft({ ...editPackageDraft, secondPaymentType: m })}
+                onChange={(e) => setEditPackageDraft({ ...editPackageDraft, secondPaymentType: e.target.value as PaymentMethod })}
+                options={paymentMethodOptions}
               />
             </div>
 
@@ -1617,9 +1603,11 @@ export function PackagePage() {
                   value={editPackageDraft.remainder}
                   onChange={(e) => setEditPackageDraft({ ...editPackageDraft, remainder: e.target.value })}
                 />
-                <PaymentMethodSelector
+                <Select
+                  label="Payment method"
                   value={editPackageDraft.remainderPaymentType}
-                  onChange={(m) => setEditPackageDraft({ ...editPackageDraft, remainderPaymentType: m })}
+                  onChange={(e) => setEditPackageDraft({ ...editPackageDraft, remainderPaymentType: e.target.value as PaymentMethod })}
+                  options={paymentMethodOptions}
                 />
               </div>
             )}

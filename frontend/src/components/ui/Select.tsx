@@ -48,9 +48,9 @@ export function Select({
           aria-invalid={error ? true : undefined}
           {...rest}
         >
-          {placeholder && <option value="" disabled>{placeholder}</option>}
+          {placeholder && <option value="" disabled className="bg-[#1e232d] text-gray-400">{placeholder}</option>}
           {options.map((opt) => (
-            <option key={opt.value} value={opt.value} disabled={opt.disabled}>
+            <option key={opt.value} value={opt.value} disabled={opt.disabled} className="bg-[#1e232d] text-white py-1">
               {opt.label}
             </option>
           ))}
