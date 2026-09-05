@@ -316,6 +316,7 @@ app.post('/api/package', requireRole(['cashier', 'cameraman', 'owner']), async (
     const rType = ['Cash', 'Bank', 'Telebirr'].includes(remainderPaymentType) ? remainderPaymentType : null
     if (first < 0 || second < 0 || (rest != null && rest < 0)) return res.status(400).json({ error: 'Payments cannot be negative' })
     const id = await nextId('package', 'pkg')
+    const firstCashierConfirmed = isCashier && type === 'Cash'
     const { rows } = await pool.query(
       `INSERT INTO package (id, name, phone, quantity, frame, first_payment, second_payment, remainder, date, payment_type, full_payment,
                             created_by, created_by_name, pending_selection,
@@ -324,7 +325,7 @@ app.post('/api/package', requireRole(['cashier', 'cameraman', 'owner']), async (
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
        ${packageReturning}`,
       [id, name, phone, qty, frame ?? null, first, second, rest, date ?? null, type, full, me.id, me.userName, isPending,
-       isCashier, isCashier ? me.id : null, isCashier ? new Date() : null, secType, rType],
+       firstCashierConfirmed, firstCashierConfirmed ? me.id : null, firstCashierConfirmed ? new Date() : null, secType, rType],
     )
     res.status(201).json(rows[0])
   } catch (err) {
@@ -363,10 +364,15 @@ app.put('/api/package/:id', requireRole(['cashier', 'owner', 'cameraman']), asyn
         updateFields.remainder_confirmed = false
         updateFields.remainder_confirmed_by = null
         updateFields.remainder_confirmed_at = null
-        if (me.role === 'cashier') {
+        const effFirstType = paymentType || pkg.paymentType
+        if (me.role === 'cashier' && effFirstType === 'Cash') {
           updateFields.first_cashier_confirmed = true
           updateFields.first_cashier_confirmed_by = me.id
           updateFields.first_cashier_confirmed_at = new Date()
+        } else {
+          updateFields.first_cashier_confirmed = false
+          updateFields.first_cashier_confirmed_by = null
+          updateFields.first_cashier_confirmed_at = null
         }
       }
     }
@@ -390,6 +396,11 @@ app.put('/api/package/:id', requireRole(['cashier', 'owner', 'cameraman']), asyn
 
     if (paymentType !== undefined && paymentType != null) {
       updateFields.payment_type = ['Cash', 'Bank', 'Telebirr'].includes(paymentType) ? paymentType : 'Cash'
+      if (updateFields.payment_type !== 'Cash') {
+        updateFields.first_cashier_confirmed = false
+        updateFields.first_cashier_confirmed_by = null
+        updateFields.first_cashier_confirmed_at = null
+      }
     }
 
     if (fullPayment !== undefined) {
@@ -429,12 +440,15 @@ app.put('/api/package/:id', requireRole(['cashier', 'owner', 'cameraman']), asyn
       const second = Number(secondPayment)
       if (second < 0) return res.status(400).json({ error: 'Payments cannot be negative' })
       updateFields.second_payment = second
+      const secType = secondPaymentType !== undefined
+        ? (['Cash', 'Bank', 'Telebirr'].includes(secondPaymentType) ? secondPaymentType : 'Cash')
+        : (pkg.secondPaymentType || updateFields.payment_type || pkg.paymentType)
       if (second !== Number(pkg.secondPayment)) {
-        if (me.role === 'cashier' && second > 0) {
+        if (me.role === 'cashier' && second > 0 && secType === 'Cash') {
           updateFields.second_payment_cashier_confirmed = true
           updateFields.second_payment_cashier_confirmed_by = me.id
           updateFields.second_payment_cashier_confirmed_at = new Date()
-        } else if (pkg.secondPaymentCashierConfirmed) {
+        } else {
           updateFields.second_payment_cashier_confirmed = false
           updateFields.second_payment_cashier_confirmed_by = null
           updateFields.second_payment_cashier_confirmed_at = null
@@ -468,26 +482,43 @@ app.put('/api/package/:id', requireRole(['cashier', 'owner', 'cameraman']), asyn
       const isReceived = Boolean(remainderReceived)
       updateFields.remainder_received = isReceived
       updateFields.remainder_received_at = isReceived ? new Date() : null
+      const remType = remainderPaymentType !== undefined
+        ? (['Cash', 'Bank', 'Telebirr'].includes(remainderPaymentType) ? remainderPaymentType : null)
+        : (pkg.remainderPaymentType || updateFields.payment_type || pkg.paymentType)
       if (isReceived !== pkg.remainderReceived) {
         if (me.role !== 'owner') {
           updateFields.remainder_confirmed = false
           updateFields.remainder_confirmed_by = null
           updateFields.remainder_confirmed_at = null
         }
-        if (isReceived && me.role === 'cashier') {
+        if (isReceived && me.role === 'cashier' && remType === 'Cash') {
           updateFields.remainder_cashier_confirmed = true
           updateFields.remainder_cashier_confirmed_by = me.id
           updateFields.remainder_cashier_confirmed_at = new Date()
+        } else {
+          updateFields.remainder_cashier_confirmed = false
+          updateFields.remainder_cashier_confirmed_by = null
+          updateFields.remainder_cashier_confirmed_at = null
         }
       }
     }
 
     if (secondPaymentType !== undefined && secondPaymentType != null) {
       updateFields.second_payment_type = ['Cash', 'Bank', 'Telebirr'].includes(secondPaymentType) ? secondPaymentType : 'Cash'
+      if (updateFields.second_payment_type !== 'Cash') {
+        updateFields.second_payment_cashier_confirmed = false
+        updateFields.second_payment_cashier_confirmed_by = null
+        updateFields.second_payment_cashier_confirmed_at = null
+      }
     }
 
     if (remainderPaymentType !== undefined) {
       updateFields.remainder_payment_type = ['Cash', 'Bank', 'Telebirr'].includes(remainderPaymentType) ? remainderPaymentType : null
+      if (updateFields.remainder_payment_type && updateFields.remainder_payment_type !== 'Cash') {
+        updateFields.remainder_cashier_confirmed = false
+        updateFields.remainder_cashier_confirmed_by = null
+        updateFields.remainder_cashier_confirmed_at = null
+      }
     }
 
     const entries = Object.entries(updateFields)
@@ -510,6 +541,7 @@ app.post('/api/package/:id/cashier-confirm-first', requireRole(['cashier']), asy
     const { rows } = await pool.query(`${packageSelect} WHERE id = $1`, [req.params.id])
     const pkg = rows[0]
     if (!pkg) return res.status(404).json({ error: 'Package not found' })
+    if (pkg.paymentType !== 'Cash') return res.status(400).json({ error: 'Only cash payments require cashier confirmation' })
     if (pkg.firstCashierConfirmed) return res.status(400).json({ error: 'First payment already cashier-confirmed' })
     if (pkg.firstConfirmed) return res.status(400).json({ error: 'First payment already confirmed by owner' })
     const { rows: updated } = await pool.query(
@@ -550,6 +582,8 @@ app.post('/api/package/:id/cashier-confirm-remainder', requireRole(['cashier']),
     const { rows } = await pool.query(`${packageSelect} WHERE id = $1`, [req.params.id])
     const pkg = rows[0]
     if (!pkg) return res.status(404).json({ error: 'Package not found' })
+    const effectiveRemainderType = pkg.remainderPaymentType || pkg.paymentType
+    if (effectiveRemainderType !== 'Cash') return res.status(400).json({ error: 'Only cash payments require cashier confirmation' })
     if (pkg.remainderCashierConfirmed) return res.status(400).json({ error: 'Remainder already cashier-confirmed' })
     if (pkg.remainderConfirmed) return res.status(400).json({ error: 'Remainder already confirmed by owner' })
     if (!pkg.remainderReceived) return res.status(400).json({ error: 'Remainder payment has not been recorded yet' })
@@ -594,6 +628,8 @@ app.post('/api/package/:id/cashier-confirm-second', requireRole(['cashier']), as
     const { rows } = await pool.query(`${packageSelect} WHERE id = $1`, [req.params.id])
     const pkg = rows[0]
     if (!pkg) return res.status(404).json({ error: 'Package not found' })
+    const effectiveSecondType = pkg.secondPaymentType || pkg.paymentType
+    if (effectiveSecondType !== 'Cash') return res.status(400).json({ error: 'Only cash payments require cashier confirmation' })
     if (pkg.secondPayment <= 0) return res.status(400).json({ error: 'No second payment on this package' })
     if (pkg.secondPaymentCashierConfirmed) return res.status(400).json({ error: 'Second payment already cashier-confirmed' })
     if (pkg.secondPaymentConfirmed) return res.status(400).json({ error: 'Second payment already confirmed by owner' })

@@ -114,23 +114,23 @@ function statusOf(pkg: PackageRecord): { label: string; tone: BadgeTone } {
 
   if (pkg.fullPayment) {
     if (firstDone && secondDone && remainderDone) return { label: 'Paid', tone: 'paid' }
-    if (!isFirstCash || pkg.firstCashierConfirmed) return { label: 'Full payment · awaiting owner', tone: 'info' }
-    return { label: 'Full payment · awaiting cashier', tone: 'warning' }
+    if (isFirstCash && !pkg.firstCashierConfirmed) return { label: 'Full payment · awaiting cashier', tone: 'warning' }
+    return { label: 'Full payment · awaiting owner', tone: 'info' }
   }
 
   if (!pkg.firstConfirmed) {
-    if (!isFirstCash || pkg.firstCashierConfirmed) return { label: 'Awaiting owner confirmation', tone: 'info' }
-    return { label: 'Awaiting cashier confirmation', tone: 'warning' }
+    if (isFirstCash && !pkg.firstCashierConfirmed) return { label: 'Awaiting cashier confirmation', tone: 'warning' }
+    return { label: 'Awaiting owner confirmation', tone: 'info' }
   }
 
   if (pkg.secondPayment > 0 && !pkg.secondPaymentConfirmed) {
-    if (!isSecondCash || pkg.secondPaymentCashierConfirmed) return { label: 'Second payment · awaiting owner', tone: 'info' }
-    return { label: 'Second payment · awaiting cashier', tone: 'warning' }
+    if (isSecondCash && !pkg.secondPaymentCashierConfirmed) return { label: 'Second payment · awaiting cashier', tone: 'warning' }
+    return { label: 'Second payment · awaiting owner', tone: 'info' }
   }
 
   if ((pkg.remainder ?? 0) > 0 && !pkg.remainderConfirmed) {
-    if (pkg.remainderReceived && (!isRemainderCash || pkg.remainderCashierConfirmed)) return { label: 'Remainder · awaiting owner', tone: 'info' }
-    if (pkg.remainderReceived) return { label: 'Remainder received · awaiting cashier', tone: 'warning' }
+    if (pkg.remainderReceived && isRemainderCash && !pkg.remainderCashierConfirmed) return { label: 'Remainder received · awaiting cashier', tone: 'warning' }
+    if (pkg.remainderReceived) return { label: 'Remainder · awaiting owner', tone: 'info' }
     return { label: 'Remainder pending', tone: 'warning' }
   }
 
@@ -573,7 +573,7 @@ export function PackagePage() {
       <PageHeader
         eyebrow="Offers"
         title="Package"
-        description={isOwner ? 'Receive money from the cashier and confirm package orders' : 'Record and track package orders'}
+        description={isOwner ? 'Confirm package orders and payments' : 'Record and track package orders'}
         actions={
           canAddPackage ? (
             <Button icon={<Plus size={16} />} onClick={() => setAddOpen(true)}>
@@ -1299,7 +1299,7 @@ export function PackagePage() {
         message={
           confirmFirstTarget ? (
             <span className="text-base sm:text-lg">
-              Confirm I received <strong className="text-accent text-xl font-extrabold">{fmt(confirmFirstTarget.firstPayment)}</strong> for <strong className="text-text-primary font-bold">{confirmFirstTarget.name}</strong>.
+              Confirm {confirmFirstTarget.paymentType === 'Cash' ? 'cash received from cashier' : `payment received via ${confirmFirstTarget.paymentType}`} of <strong className="text-accent text-xl font-extrabold">{fmt(confirmFirstTarget.firstPayment)}</strong> for <strong className="text-text-primary font-bold">{confirmFirstTarget.name}</strong>.
             </span>
           ) : undefined
         }
@@ -1315,7 +1315,7 @@ export function PackagePage() {
         message={
           confirmRemainderTarget ? (
             <span className="text-base sm:text-lg">
-              Confirm I received <strong className="text-accent text-xl font-extrabold">{fmt(confirmRemainderTarget.remainder)}</strong> for <strong className="text-text-primary font-bold">{confirmRemainderTarget.name}</strong>.
+              Confirm {(confirmRemainderTarget.remainderPaymentType || confirmRemainderTarget.paymentType) === 'Cash' ? 'cash received from cashier' : `payment received via ${confirmRemainderTarget.remainderPaymentType || confirmRemainderTarget.paymentType}`} of <strong className="text-accent text-xl font-extrabold">{fmt(confirmRemainderTarget.remainder)}</strong> for <strong className="text-text-primary font-bold">{confirmRemainderTarget.name}</strong>.
             </span>
           ) : undefined
         }
@@ -1628,7 +1628,7 @@ export function PackagePage() {
         message={
           cashierConfirmFirstTarget ? (
             <span className="text-base sm:text-lg">
-              Confirm I received <strong className="text-accent text-xl font-extrabold">{fmt(cashierConfirmFirstTarget.firstPayment)}</strong> for <strong className="text-text-primary font-bold">{cashierConfirmFirstTarget.name}</strong>.
+              Confirm I received <strong className="text-accent text-xl font-extrabold">{fmt(cashierConfirmFirstTarget.firstPayment)}</strong> in cash for <strong className="text-text-primary font-bold">{cashierConfirmFirstTarget.name}</strong>.
             </span>
           ) : undefined
         }
@@ -1644,7 +1644,7 @@ export function PackagePage() {
         message={
           cashierConfirmRemainderTarget ? (
             <span className="text-base sm:text-lg">
-              Confirm I received <strong className="text-accent text-xl font-extrabold">{fmt(cashierConfirmRemainderTarget.remainder)}</strong> for <strong className="text-text-primary font-bold">{cashierConfirmRemainderTarget.name}</strong>.
+              Confirm I received <strong className="text-accent text-xl font-extrabold">{fmt(cashierConfirmRemainderTarget.remainder)}</strong> in cash for <strong className="text-text-primary font-bold">{cashierConfirmRemainderTarget.name}</strong>.
             </span>
           ) : undefined
         }
@@ -1660,7 +1660,7 @@ export function PackagePage() {
         message={
           cashierConfirmSecondTarget ? (
             <span className="text-base sm:text-lg">
-              Confirm I received <strong className="text-accent text-xl font-extrabold">{fmt(cashierConfirmSecondTarget.secondPayment)}</strong> for <strong className="text-text-primary font-bold">{cashierConfirmSecondTarget.name}</strong>.
+              Confirm I received <strong className="text-accent text-xl font-extrabold">{fmt(cashierConfirmSecondTarget.secondPayment)}</strong> in cash for <strong className="text-text-primary font-bold">{cashierConfirmSecondTarget.name}</strong>.
             </span>
           ) : undefined
         }
@@ -1676,7 +1676,7 @@ export function PackagePage() {
         message={
           confirmSecondTarget ? (
             <span className="text-base sm:text-lg">
-              Confirm I received <strong className="text-accent text-xl font-extrabold">{fmt(confirmSecondTarget.secondPayment)}</strong> for <strong className="text-text-primary font-bold">{confirmSecondTarget.name}</strong>.
+              Confirm {(confirmSecondTarget.secondPaymentType || confirmSecondTarget.paymentType) === 'Cash' ? 'cash received from cashier' : `payment received via ${confirmSecondTarget.secondPaymentType || confirmSecondTarget.paymentType}`} of <strong className="text-accent text-xl font-extrabold">{fmt(confirmSecondTarget.secondPayment)}</strong> for <strong className="text-text-primary font-bold">{confirmSecondTarget.name}</strong>.
             </span>
           ) : undefined
         }
