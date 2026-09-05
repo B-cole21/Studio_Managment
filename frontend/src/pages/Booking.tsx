@@ -80,7 +80,7 @@ export function BookingPage() {
       />
 
       <section className="overflow-hidden rounded-xl border border-border-subtle bg-surface-2">
-        <div className="flex items-center justify-between border-b border-border-subtle px-5 py-4">
+        <div className="flex flex-col gap-3 border-b border-border-subtle px-4 py-3.5 sm:px-5 sm:py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-[15px] font-semibold text-text-primary">Today's bookings</h2>
             <p className="text-[13px] text-text-muted">
@@ -89,20 +89,20 @@ export function BookingPage() {
                 : `${list.length} ${list.length === 1 ? 'booking' : 'bookings'} scheduled`}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
             {list.length > 0 && (
-              <div className="relative">
+              <div className="relative flex-1 sm:w-56 sm:flex-initial">
                 <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
                 <input
                   type="text"
                   placeholder="Search name or phone…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="h-8 w-48 rounded-md border border-border-strong bg-surface-2 pl-8 pr-3 text-[13px] text-text-primary placeholder:text-text-muted transition-colors hover:border-accent focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+                  className="h-8 w-full rounded-md border border-border-strong bg-surface-2 pl-8 pr-3 text-sm text-text-primary placeholder:text-text-muted transition-colors hover:border-accent focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
                 />
               </div>
             )}
-            <span className="flex items-center gap-1.5 text-[13px] text-text-muted">
+            <span className="flex items-center gap-1.5 text-xs sm:text-[13px] text-text-muted shrink-0">
               <CalendarDays size={14} />
               Today
             </span>
@@ -122,62 +122,113 @@ export function BookingPage() {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-border-subtle text-[12px] uppercase tracking-wide text-text-muted">
-                  <th className="px-5 py-2.5 font-medium">Time</th>
-                  <th className="px-5 py-2.5 font-medium">Customer</th>
-                  <th className="px-5 py-2.5 font-medium">Phone</th>
-                  <th className="px-5 py-2.5 font-medium">Event</th>
-                  <th className="px-5 py-2.5 font-medium"><span className="sr-only">Actions</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((b) => {
-                  const svc = serviceByName(state, b.event)
-                  return (
-                    <tr key={b.id} className="border-b border-border-subtle/60 last:border-b-0">
-                      <td className="whitespace-nowrap px-5 py-3 tabular">
-                        <p className="text-[13px] font-medium text-text-primary">
-                          {toEthiopianTime(b.time)}
-                        </p>
-                      </td>
-                      <td className="px-5 py-3">
-                        <p className="text-[13px] font-medium text-text-primary">{b.customerName}</p>
-                      </td>
-                      <td className="px-5 py-3">
-                        <p className="text-[13px] tabular text-text-secondary">{b.phone}</p>
-                      </td>
-                      <td className="px-5 py-3">
-                        <p className="text-[13px] font-medium text-text-primary">
-                          {b.event}
+          <>
+            {/* Mobile Card List View (< md) */}
+            <div className="flex flex-col divide-y divide-border-subtle md:hidden">
+              {filtered.map((b) => {
+                const svc = serviceByName(state, b.event)
+                return (
+                  <div key={b.id} className="flex flex-col gap-2.5 p-4 transition-colors hover:bg-surface-3/50">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-semibold text-text-primary">{b.customerName}</span>
+                          <span className="rounded bg-accent-soft px-1.5 py-0.5 text-xs font-semibold text-accent tabular">
+                            {toEthiopianTime(b.time)}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-text-muted">
+                          {b.phone ? (
+                            <a href={`tel:${b.phone}`} className="text-text-secondary hover:text-accent hover:underline tabular">
+                              {b.phone}
+                            </a>
+                          ) : (
+                            <span>No phone</span>
+                          )}
+                          <span>•</span>
+                          <span className="text-text-secondary">{b.event}</span>
                           {svc?.isBirthday && <Badge tone="info">Birthday</Badge>}
-                        </p>
-                        {b.age != null && <p className="text-xs text-text-muted">{b.age} yrs</p>}
-                      </td>
-                      <td className="px-5 py-3 text-right">
-                        <span className="inline-flex items-center gap-1">
-                          <IconButton
-                            label={`Change date for ${b.customerName}`}
-                            variant="ghost"
-                            icon={<CalendarClock size={15} />}
-                            onClick={() => setPendingReschedule(b)}
-                          />
-                          <IconButton
-                            label={`Delete booking for ${b.customerName}`}
-                            variant="ghost"
-                            icon={<Trash2 size={15} />}
-                            onClick={() => setPendingDelete(b)}
-                          />
-                        </span>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                          {b.age != null && <span>({b.age} yrs)</span>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <IconButton
+                          label={`Change date for ${b.customerName}`}
+                          variant="ghost"
+                          icon={<CalendarClock size={16} />}
+                          onClick={() => setPendingReschedule(b)}
+                        />
+                        <IconButton
+                          label={`Delete booking for ${b.customerName}`}
+                          variant="ghost"
+                          icon={<Trash2 size={16} />}
+                          onClick={() => setPendingDelete(b)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Desktop Table View (>= md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-border-subtle text-[12px] uppercase tracking-wide text-text-muted">
+                    <th className="px-5 py-2.5 font-medium">Time</th>
+                    <th className="px-5 py-2.5 font-medium">Customer</th>
+                    <th className="px-5 py-2.5 font-medium">Phone</th>
+                    <th className="px-5 py-2.5 font-medium">Event</th>
+                    <th className="px-5 py-2.5 font-medium"><span className="sr-only">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((b) => {
+                    const svc = serviceByName(state, b.event)
+                    return (
+                      <tr key={b.id} className="border-b border-border-subtle/60 last:border-b-0">
+                        <td className="whitespace-nowrap px-5 py-3 tabular">
+                          <p className="text-[13px] font-medium text-text-primary">
+                            {toEthiopianTime(b.time)}
+                          </p>
+                        </td>
+                        <td className="px-5 py-3">
+                          <p className="text-[13px] font-medium text-text-primary">{b.customerName}</p>
+                        </td>
+                        <td className="px-5 py-3">
+                          <p className="text-[13px] tabular text-text-secondary">{b.phone}</p>
+                        </td>
+                        <td className="px-5 py-3">
+                          <p className="text-[13px] font-medium text-text-primary">
+                            {b.event}
+                            {svc?.isBirthday && <Badge tone="info">Birthday</Badge>}
+                          </p>
+                          {b.age != null && <p className="text-xs text-text-muted">{b.age} yrs</p>}
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <span className="inline-flex items-center gap-1">
+                            <IconButton
+                              label={`Change date for ${b.customerName}`}
+                              variant="ghost"
+                              icon={<CalendarClock size={15} />}
+                              onClick={() => setPendingReschedule(b)}
+                            />
+                            <IconButton
+                              label={`Delete booking for ${b.customerName}`}
+                              variant="ghost"
+                              icon={<Trash2 size={15} />}
+                              onClick={() => setPendingDelete(b)}
+                            />
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
 

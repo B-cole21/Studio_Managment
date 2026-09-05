@@ -25,7 +25,7 @@ export function MobileNav() {
     <>
       <nav
         aria-label="Mobile Navigation"
-        className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-border-subtle bg-surface-1/95 px-2 backdrop-blur-md md:hidden"
+        className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-border-subtle bg-surface-1/95 px-1 pb-[env(safe-area-inset-bottom,0px)] h-[calc(4rem+env(safe-area-inset-bottom,0px))] backdrop-blur-md touch-manipulation select-none md:hidden"
       >
         {filteredNav.map((item) => (
           <NavLink
