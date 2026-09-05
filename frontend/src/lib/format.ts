@@ -165,3 +165,8 @@ export function toEthiopianTime(time: string): string {
 export function initials(firstName: string, lastName: string): string {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
 }
+
+export function formatEventName(event: string): string {
+  if (event.trim().toLowerCase() === 'birthday package') return 'Birthday'
+  return event
+}

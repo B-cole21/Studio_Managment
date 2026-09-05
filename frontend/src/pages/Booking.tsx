@@ -8,7 +8,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { ChangeDateDialog } from '../components/ui/ChangeDateDialog'
 import { useStore, bookingsOnDate, serviceByName } from '../lib/store'
-import { formatDate, formatFullDate, toEthiopianTime, todayISO } from '../lib/format'
+import { formatDate, formatFullDate, toEthiopianTime, todayISO, formatEventName } from '../lib/format'
 import type { Booking } from '../lib/types'
 
 export function BookingPage() {
@@ -146,8 +146,8 @@ export function BookingPage() {
                             <span>No phone</span>
                           )}
                           <span>•</span>
-                          <span className="text-text-secondary">{b.event}</span>
-                          {svc?.isBirthday && <Badge tone="info">Birthday</Badge>}
+                          <span className="text-text-secondary">{formatEventName(b.event)}</span>
+                          {svc?.isBirthday && !b.event.toLowerCase().includes('birthday') && <Badge tone="info">Birthday</Badge>}
                           {b.age != null && <span>({b.age} yrs)</span>}
                         </div>
                       </div>
@@ -201,8 +201,8 @@ export function BookingPage() {
                         </td>
                         <td className="px-5 py-3">
                           <p className="text-[13px] font-medium text-text-primary">
-                            {b.event}
-                            {svc?.isBirthday && <Badge tone="info">Birthday</Badge>}
+                            {formatEventName(b.event)}
+                            {svc?.isBirthday && !b.event.toLowerCase().includes('birthday') && <Badge tone="info">Birthday</Badge>}
                           </p>
                           {b.age != null && <p className="text-xs text-text-muted">{b.age} yrs</p>}
                         </td>

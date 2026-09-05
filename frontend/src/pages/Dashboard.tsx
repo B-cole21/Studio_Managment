@@ -7,6 +7,7 @@ import { useStore, bookingsOnDate, serviceByName } from '../lib/store'
 import {
   addDaysISO, ETHIOPIAN_MONTHS, ETHIOPIAN_WEEKDAYS, ethiopianFromISO,
   ethiopianWeekdayIndex, formatDate, todayISO, toEthiopianTime, formatFullDate,
+  formatEventName,
 } from '../lib/format'
 import type { Booking } from '../lib/types'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -506,8 +507,8 @@ export function Dashboard() {
                             <span>No phone</span>
                           )}
                           <span>•</span>
-                          <span className="text-text-secondary">{booking.event}</span>
-                          {svc?.isBirthday && <Badge tone="info">Birthday</Badge>}
+                          <span className="text-text-secondary">{formatEventName(booking.event)}</span>
+                          {svc?.isBirthday && !booking.event.toLowerCase().includes('birthday') && <Badge tone="info">Birthday</Badge>}
                           {booking.age != null && <span>({booking.age} yrs)</span>}
                         </div>
                       </div>
@@ -577,8 +578,8 @@ export function Dashboard() {
                         </td>
                         <td className="px-5 py-3">
                           <p className="text-[13px] font-medium text-text-primary">
-                            {booking.event}
-                            {svc?.isBirthday && <Badge tone="info">Birthday</Badge>}
+                            {formatEventName(booking.event)}
+                            {svc?.isBirthday && !booking.event.toLowerCase().includes('birthday') && <Badge tone="info">Birthday</Badge>}
                           </p>
                           {booking.age != null && <p className="text-xs text-text-muted">{booking.age} yrs</p>}
                         </td>

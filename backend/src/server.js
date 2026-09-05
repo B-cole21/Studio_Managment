@@ -1,6 +1,5 @@
 import dns from 'node:dns'
 import express from 'express'
-import cors from 'cors'
 
 dns.setDefaultResultOrder('ipv4first')
 import session from 'express-session'
