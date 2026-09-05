@@ -148,7 +148,7 @@ app.delete('/api/services/:id', async (req, res, next) => {
 app.get('/api/booking', async (_req, res, next) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, customer_name AS "customerName", event, date::text AS "date", time, phone, age
+      `SELECT id, event, date::text AS "date", time, phone, age
        FROM booking ORDER BY date, time`,
     )
     res.json(rows)
@@ -159,15 +159,15 @@ app.get('/api/booking', async (_req, res, next) => {
 
 app.post('/api/booking', async (req, res, next) => {
   try {
-    const { customerName, event, date, time, phone, age } = req.body
+    const { event, date, time, phone, age } = req.body
     if (!event || !date || !time || !phone) {
       return res.status(400).json({ error: 'event, date, time and phone are required' })
     }
     const { rows } = await pool.query(
-      `INSERT INTO booking (customer_name, event, date, time, phone, age)
-       VALUES ($1, $2, $3::date, $4, $5, $6)
-       RETURNING id, customer_name AS "customerName", event, date::text AS "date", time, phone, age`,
-      [customerName ? customerName.trim() : '', event, date, time, phone, age ?? null],
+      `INSERT INTO booking (event, date, time, phone, age)
+       VALUES ($1, $2::date, $3, $4, $5)
+       RETURNING id, event, date::text AS "date", time, phone, age`,
+      [event, date, time, phone, age ?? null],
     )
     res.status(201).json(rows[0])
   } catch (err) {
@@ -177,18 +177,17 @@ app.post('/api/booking', async (req, res, next) => {
 
 app.put('/api/booking/:id', async (req, res, next) => {
   try {
-    const { customerName, event, date, time, phone, age } = req.body
+    const { event, date, time, phone, age } = req.body
     const { rows } = await pool.query(
       `UPDATE booking
-       SET customer_name = COALESCE($2, customer_name),
-           event = COALESCE($3, event),
-           date = COALESCE($4::date, date),
-           time = COALESCE($5, time),
-           phone = COALESCE($6, phone),
-           age = COALESCE($7, age)
+       SET event = COALESCE($2, event),
+           date = COALESCE($3::date, date),
+           time = COALESCE($4, time),
+           phone = COALESCE($5, phone),
+           age = COALESCE($6, age)
        WHERE id = $1
-       RETURNING id, customer_name AS "customerName", event, date::text AS "date", time, phone, age`,
-      [req.params.id, customerName, event, date, time, phone, age],
+       RETURNING id, event, date::text AS "date", time, phone, age`,
+      [req.params.id, event, date, time, phone, age],
     )
     if (rows.length === 0) return res.status(404).json({ error: 'Booking not found' })
     res.json(rows[0])

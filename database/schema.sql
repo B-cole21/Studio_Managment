@@ -25,7 +25,6 @@ CREATE TABLE service (
 
 CREATE TABLE booking (
   id            SERIAL PRIMARY KEY,
-  customer_name TEXT NOT NULL DEFAULT '',
   event         TEXT NOT NULL,
   date          DATE NOT NULL,
   time          TEXT NOT NULL,

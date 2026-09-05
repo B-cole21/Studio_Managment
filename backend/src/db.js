@@ -39,9 +39,8 @@ pool.query("ALTER TABLE package ADD COLUMN IF NOT EXISTS second_payment_type TEX
 pool.query('ALTER TABLE settings ADD COLUMN IF NOT EXISTS allow_double_booking BOOLEAN DEFAULT TRUE').catch(() => {})
 pool.query('ALTER TABLE settings ADD COLUMN IF NOT EXISTS camera_count INTEGER DEFAULT 2').catch(() => {})
 
-// Auto-migration: allow booking without customer_name
-pool.query('ALTER TABLE booking ALTER COLUMN customer_name DROP NOT NULL').catch(() => {})
-pool.query("ALTER TABLE booking ALTER COLUMN customer_name SET DEFAULT ''").catch(() => {})
+// Auto-migration: drop customer_name column from booking
+pool.query('ALTER TABLE booking DROP COLUMN IF EXISTS customer_name').catch(() => {})
 
 
 // Auto-migration & Performance Indexes
